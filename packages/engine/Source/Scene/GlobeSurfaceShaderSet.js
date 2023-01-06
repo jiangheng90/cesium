@@ -8,12 +8,14 @@ import SceneMode from "./SceneMode.js";
 function GlobeSurfaceShader(
   numberOfDayTextures,
   flags,
+  extensionFlags,
   material,
   shaderProgram,
   clippingShaderState
 ) {
   this.numberOfDayTextures = numberOfDayTextures;
   this.flags = flags;
+  this.extensionFlags = extensionFlags;
   this.material = material;
   this.shaderProgram = shaderProgram;
   this.clippingShaderState = clippingShaderState;
@@ -104,6 +106,25 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
   const hasExaggeration = options.hasExaggeration;
   const showUndergroundColor = options.showUndergroundColor;
   const translucent = options.translucent;
+  // GW-ADD
+  const onWater = options.onWater;
+  const onOffset = options.onOffset;
+  let hasAnyWaterMask = false;
+  let hasAnyOffsetMask = false;
+  for (let i = 0; i < onWater.length; i++) {
+    if (onWater[i]) {
+      hasAnyWaterMask = true;
+      break;
+    }
+  }
+
+  for (let i = 0; i < onOffset.length; i++) {
+    if (onOffset[i]) {
+      hasAnyOffsetMask = true;
+      break;
+    }
+  }
+  // GW-ADD
 
   let quantization = 0;
   let quantizationDefine = "";
@@ -163,6 +184,10 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     (translucent << 29) |
     (applyDayNightAlpha << 30);
 
+  // GW-ADD
+  const extensionFlags = hasAnyWaterMask | (hasAnyOffsetMask << 1);
+  const key = `${flags}-${extensionFlags}`;
+  // GW-ADD
   let currentClippingShaderState = 0;
   if (defined(clippingPlanes) && clippingPlanes.length > 0) {
     currentClippingShaderState = enableClippingPlanes
@@ -174,6 +199,9 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     defined(surfaceShader) &&
     surfaceShader.numberOfDayTextures === numberOfDayTextures &&
     surfaceShader.flags === flags &&
+    //GW-ADD
+    surfaceShader.extensionFlags === extensionFlags &&
+    //GW-ADD
     surfaceShader.material === this.material &&
     surfaceShader.clippingShaderState === currentClippingShaderState
   ) {
@@ -186,7 +214,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     shadersByFlags = this._shadersByTexturesFlags[numberOfDayTextures] = [];
   }
 
-  surfaceShader = shadersByFlags[flags];
+  surfaceShader = shadersByFlags[key];
   if (
     !defined(surfaceShader) ||
     surfaceShader.material !== this.material ||
@@ -203,6 +231,10 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     }
 
     vs.defines.push(quantizationDefine);
+
+    // GW-ADD
+    vs.defines.push(`TEXTURE_UNITS ${numberOfDayTextures}`);
+    // GW-ADD
     fs.defines.push(
       `TEXTURE_UNITS ${numberOfDayTextures}`,
       cartographicLimitRectangleDefine,
@@ -308,6 +340,15 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
       vs.defines.push("EXAGGERATION");
     }
 
+    // GW-ADD
+    if (hasAnyWaterMask) {
+      fs.defines.push("HAS_ANY_WATER_MASK");
+    }
+    if (hasAnyOffsetMask) {
+      vs.defines.push("HAS_ANY_OFFSET_MASK");
+    }
+    // GW-ADD
+
     let computeDayColor =
       "\
     vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend)\n\
@@ -322,6 +363,13 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     }
 
     for (let i = 0; i < numberOfDayTextures; ++i) {
+      // GW-ADD
+      const isWaterMask = onWater[i];
+      const isOffsetMask = onOffset[i];
+      if (isWaterMask || isOffsetMask) {
+        continue;
+      }
+      // GW-ADD
       if (hasImageryLayerCutout) {
         computeDayColor += `\
         cutoutAndColorResult = u_dayTextureCutoutRectangles[${i}];\n\
@@ -338,9 +386,9 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
             u_dayTextureTexCoordsRectangle[${i}],\n\
             u_dayTextureTranslationAndScale[${i}],\n\
             ${applyAlpha ? `u_dayTextureAlpha[${i}]` : "1.0"},\n\
-            ${applyDayNightAlpha ? `u_dayTextureNightAlpha[${i}]` : "1.0"},\n${
-        applyDayNightAlpha ? `u_dayTextureDayAlpha[${i}]` : "1.0"
-      },\n${applyBrightness ? `u_dayTextureBrightness[${i}]` : "0.0"},\n\
+            ${applyDayNightAlpha ? `u_dayTextureNightAlpha[${i}]` : "1.0"},\n
+            ${applyDayNightAlpha ? `u_dayTextureDayAlpha[${i}]` : "1.0"},\n
+            ${applyBrightness ? `u_dayTextureBrightness[${i}]` : "0.0"},\n\
             ${applyContrast ? `u_dayTextureContrast[${i}]` : "0.0"},\n\
             ${applyHue ? `u_dayTextureHue[${i}]` : "0.0"},\n\
             ${applySaturation ? `u_dayTextureSaturation[${i}]` : "0.0"},\n\
@@ -362,8 +410,60 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
 
     fs.sources.push(computeDayColor);
 
+    // GW-ADD
+    if (hasAnyWaterMask) {
+      let sampleWaterColors = `
+      vec4 sampleWaterColors() {
+        vec4 finalSeaColor =  vec4(0.0);
+      `;
+      for (let i = 0; i < numberOfDayTextures; ++i) {
+        const isWaterMask = onWater[i];
+        if (!isWaterMask) {
+          continue;
+        }
+        sampleWaterColors += `
+          vec2 waterMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
+          vec2 waterMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
+          vec2 waterMaskTextureCoordinates${i} = v_textureCoordinates.xy * waterMaskScale${i} + waterMaskTranslation${i};
+          vec4 waterColor${i} = texture2D(u_dayTextures[${i}], waterMaskTextureCoordinates${i});
+          waterColor${i}.a *= ${applyAlpha ? `u_dayTextureAlpha[${i}]` : "1.0"};
+          finalSeaColor = waterColor${i};
+          `;
+      }
+      sampleWaterColors += `
+        return finalSeaColor;
+      }`;
+      fs.sources.push(sampleWaterColors);
+    }
+    // GW-ADD
+
     vs.sources.push(getPositionMode(sceneMode));
     vs.sources.push(get2DYPositionFraction(useWebMercatorProjection));
+    // GW-ADD
+    if (hasAnyOffsetMask) {
+      let sampleOffsetColors = `
+      vec4 sampleOffsetColors(vec2 textureCoordinates) {
+        vec4 finalOffsetColor =  vec4(0.0);
+      `;
+      for (let i = 0; i < numberOfDayTextures; ++i) {
+        const isOffsetMask = onOffset[i];
+        if (!isOffsetMask) {
+          continue;
+        }
+        sampleOffsetColors += `
+          vec2 offsetMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
+          vec2 offsetMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
+          vec2 offsetMaskTextureCoordinates${i} = textureCoordinates * offsetMaskScale${i} + offsetMaskTranslation${i};
+          vec4 offsetColor${i} = texture2D(u_dayTextures[${i}], offsetMaskTextureCoordinates${i});
+          finalOffsetColor = offsetColor${i};
+          `;
+      }
+      sampleOffsetColors += `
+        return finalOffsetColor;
+      }`;
+      vs.sources.push(sampleOffsetColors);
+    }
+    // GW-ADD
 
     const shader = ShaderProgram.fromCache({
       context: frameState.context,
@@ -372,9 +472,10 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
       attributeLocations: terrainEncoding.getAttributeLocations(),
     });
 
-    surfaceShader = shadersByFlags[flags] = new GlobeSurfaceShader(
+    surfaceShader = shadersByFlags[key] = new GlobeSurfaceShader(
       numberOfDayTextures,
       flags,
+      extensionFlags,
       this.material,
       shader,
       currentClippingShaderState

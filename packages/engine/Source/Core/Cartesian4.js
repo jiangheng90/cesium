@@ -3,6 +3,9 @@ import defaultValue from "./defaultValue.js";
 import defined from "./defined.js";
 import DeveloperError from "./DeveloperError.js";
 import CesiumMath from "./Math.js";
+// GW-ADD
+
+// GW-ADD
 
 /**
  * A 4D Cartesian point.
@@ -977,4 +980,47 @@ Cartesian4.unpackFloat = function (packedFloat) {
   }
   return scratchF32Array[0];
 };
+
+// GW-ADD
+/**
+ * @param {Number} depth
+ * @returns {Cartesian4}
+ */
+Cartesian4.czm_packDepth = function (depth) {
+  const enc = new Cartesian4(1.0, 255.0, 65025.0, 16581375.0);
+  Cartesian4.multiplyByScalar(enc, depth, enc);
+  enc.x -= Math.floor(enc.x);
+  enc.y -= Math.floor(enc.y);
+  enc.z -= Math.floor(enc.z);
+  enc.w -= Math.floor(enc.w);
+  const enc_yzww = new Cartesian4(enc.y, enc.z, enc.w, enc.w);
+  Cartesian4.multiplyComponents(
+    enc_yzww,
+    new Cartesian4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0),
+    enc_yzww
+  );
+  Cartesian4.subtract(enc, enc_yzww, enc);
+  enc.x = Math.round(enc.x * 255);
+  enc.y = Math.round(enc.y * 255);
+  enc.z = Math.round(enc.z * 255);
+  enc.w = Math.round(enc.w * 255);
+  return enc;
+};
+
+/**
+ * @param {Color} packedDepth
+ * @returns {Number}
+ */
+Cartesian4.czm_unpackDepth = function (packedDepth) {
+  const red = packedDepth.red;
+  const green = packedDepth.green;
+  const blue = packedDepth.blue;
+  const alpha = packedDepth.alpha;
+  const packedDepthBytes = new Cartesian4(red, green, blue, alpha);
+  return Cartesian4.dot(
+    packedDepthBytes,
+    new Cartesian4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0)
+  );
+};
+// GW-ADD
 export default Cartesian4;

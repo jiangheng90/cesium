@@ -42,6 +42,7 @@ import DepthFunction from "./DepthFunction.js";
 import GlobeSurfaceTile from "./GlobeSurfaceTile.js";
 import ImageryLayer from "./ImageryLayer.js";
 import ImageryState from "./ImageryState.js";
+import MaskType from "./MaskType.js";
 import PerInstanceColorAppearance from "./PerInstanceColorAppearance.js";
 import Primitive from "./Primitive.js";
 import QuadtreeTileLoadState from "./QuadtreeTileLoadState.js";
@@ -1736,6 +1737,14 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
       }
       return frameState.context.defaultTexture;
     },
+    // GW-ADD
+    u_onWater: function () {
+      return this.properties.onWater;
+    },
+    u_onOffset: function () {
+      return this.properties.onOffset;
+    },
+    // GW-ADD
     u_cartographicLimitRectangle: function () {
       return this.properties.localizedCartographicLimitRectangle;
     },
@@ -1830,6 +1839,10 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
       dayTextureCutoutRectangles: [],
       dayIntensity: 0.0,
       colorsToAlpha: [],
+      // GW-ADD
+      onWater: [],
+      onOffset: [],
+      // GW-ADD
 
       southAndNorthLatitude: new Cartesian2(),
       southMercatorYAndOneOverHeight: new Cartesian2(),
@@ -2049,6 +2062,10 @@ const surfaceShaderSetOptionsScratch = {
   colorToAlpha: undefined,
   hasGeodeticSurfaceNormals: undefined,
   hasExaggeration: undefined,
+  // GW-ADD
+  onWater: undefined,
+  onOffset: undefined,
+  // GW-ADD
 };
 
 const defaultUndergroundColor = Color.TRANSPARENT;
@@ -2387,6 +2404,10 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
       tileProvider.atmosphereMieAnisotropy;
     uniformMapProperties.zoomedOutOceanSpecularIntensity =
       tileProvider.zoomedOutOceanSpecularIntensity;
+    // GW-ADD
+    uniformMapProperties.onWater.length = 0;
+    uniformMapProperties.onOffset.length = 0;
+    // GW-ADD
 
     const frontFaceAlphaByDistanceFinal = cameraUnderground
       ? backFaceAlphaByDistance
@@ -2629,6 +2650,15 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
         applySplit ||
         uniformMapProperties.dayTextureSplit[numberOfDayTextures] !== 0.0;
 
+      // GW-ADD
+      uniformMapProperties.onWater[numberOfDayTextures] = MaskType.isWaterMask(
+        imageryLayer.maskType
+      );
+      uniformMapProperties.onOffset[
+        numberOfDayTextures
+      ] = MaskType.isOffsetMask(imageryLayer.maskType);
+      // GW-ADD
+
       // Update cutout rectangle
       let dayTextureCutoutRectangle =
         uniformMapProperties.dayTextureCutoutRectangles[numberOfDayTextures];
@@ -2746,6 +2776,10 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
     surfaceShaderSetOptions.colorToAlpha = applyColorToAlpha;
     surfaceShaderSetOptions.showUndergroundColor = showUndergroundColor;
     surfaceShaderSetOptions.translucent = translucent;
+    // GW-ADD
+    surfaceShaderSetOptions.onWater = uniformMapProperties.onWater;
+    surfaceShaderSetOptions.onOffset = uniformMapProperties.onOffset;
+    // GW-ADD
 
     let count = surfaceTile.renderedMesh.indices.length;
     if (!showSkirts) {

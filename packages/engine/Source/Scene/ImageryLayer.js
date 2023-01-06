@@ -35,6 +35,7 @@ import Imagery from "./Imagery.js";
 import ImageryState from "./ImageryState.js";
 import SplitDirection from "./SplitDirection.js";
 import TileImagery from "./TileImagery.js";
+import MaskType from "./MaskType.js";
 
 /**
  * An imagery layer that displays tiled image data from a single imagery provider
@@ -333,6 +334,17 @@ function ImageryLayer(imageryProvider, options) {
     options.colorToAlphaThreshold,
     ImageryLayer.DEFAULT_APPLY_COLOR_TO_ALPHA_THRESHOLD
   );
+
+  /**
+   * @type {Number}
+   */
+  this._maskType = defaultValue(imageryProvider.maskType, options.maskType);
+  this._maskType = defaultValue(this._maskType, MaskType.NONE);
+
+  if (MaskType.isOffsetMask(this.maskType)) {
+    this.magnificationFilter = TextureMagnificationFilter.NEAREST;
+    this.minificationFilter = TextureMinificationFilter.NEAREST;
+  }
 }
 
 Object.defineProperties(ImageryLayer.prototype, {
@@ -358,6 +370,17 @@ Object.defineProperties(ImageryLayer.prototype, {
   rectangle: {
     get: function () {
       return this._rectangle;
+    },
+  },
+
+  /**
+   * @memberof ImageryLayer.prototype
+   * @type {MaskType}
+   * @readonly
+   */
+  maskType: {
+    get: function () {
+      return this._maskType;
     },
   },
 });

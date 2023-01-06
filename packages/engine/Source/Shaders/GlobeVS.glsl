@@ -1,3 +1,8 @@
+#if TEXTURE_UNITS > 0 && defined(HAS_ANY_OFFSET_MASK)
+uniform sampler2D u_dayTextures[TEXTURE_UNITS];
+uniform vec4 u_dayTextureTranslationAndScale[TEXTURE_UNITS];
+#endif
+
 #ifdef QUANTIZATION_BITS12
 attribute vec4 compressed0;
 attribute float compressed1;
@@ -116,6 +121,10 @@ uniform vec2 u_minMaxHeight;
 uniform mat4 u_scaleAndBias;
 #endif
 
+#ifdef HAS_ANY_OFFSET_MASK
+vec4 sampleOffsetColors(vec2 textureCoordinates);
+#endif
+
 void main()
 {
 #ifdef QUANTIZATION_BITS12
@@ -170,6 +179,17 @@ void main()
     vec3 ellipsoidNormal = geodeticSurfaceNormal;
 #else
     vec3 ellipsoidNormal = normalize(position3DWC);
+#endif
+
+#ifdef HAS_ANY_OFFSET_MASK
+    vec4 offsetColor = sampleOffsetColors(textureCoordinates.xy);
+    if(offsetColor != vec4(0.0)) {
+        float heightFromProvider = czm_unpackDepth(offsetColor) * 40000. - 20000.;
+        float offsetHeightFromProvider = heightFromProvider - height;
+        vec3 offsetFromProvider = ellipsoidNormal * offsetHeightFromProvider;
+        position += offsetFromProvider;
+        position3DWC += offsetFromProvider;
+    }
 #endif
 
 #if defined(EXAGGERATION) && defined(GEODETIC_SURFACE_NORMALS)

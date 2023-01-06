@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+    />
+    <meta name="description" content="Water Mask." />
+    <meta name="cesium-sandcastle-labels" content=" Geoway" />
+    <title>Cesium Demo</title>
+    <script type="text/javascript" src="../Sandcastle-header.js"></script>
+    <script
+      type="text/javascript"
+      src="../../../Build/CesiumUnminified/Cesium.js"
+      nomodule
+    ></script>
+    <script type="module" src="../load-cesium-es6.js"></script>
+  </head>
+  <body
+    class="sandcastle-loading"
+    data-sandcastle-bucket="bucket-requirejs.html"
+  >
+    <style>
+      @import url(../templates/bucket.css);
+    </style>
+    <div id="cesiumContainer" class="fullSize"></div>
+    <div id="loadingOverlay"><h1>Loading...</h1></div>
+    <div id="toolbar">
+      <table>
+        <tbody>
+          <tr>
+            <td>show</td>
+            <td><input type="checkbox" data-bind="checked: show" /></td>
+          </tr>
+          <tr>
+            <td>alpha</td>
+            <td>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                data-bind="value: alpha, valueUpdate: 'input'"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>type</td>
+            <td id="type"></td>
+          </tr>
+          <tr>
+            <td>offset-height</td>
+            <td id="offset-height"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <script id="cesium_sandcastle_script">
+      window.startup = function (Cesium) {
+        "use strict";
+        //Sandcastle_Begin
+        // Create the viewer.
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+          imageryProvider: new Cesium.GridImageryProvider(),
+          terrainProvider: new Cesium.TiledTerrainProvider({
+            connections: [
+              {
+                priority: 0,
+                url:
+                  "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/dem30_1_1500000/terrain/data?level={TileMatrix}&col={TileCol}&row={TileRow}",
+                credit: new Cesium.Credit("WorldTerrain"),
+                rectangle: new Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+                minLevel: 1,
+                maxLevel: 14,
+                tileMatrixLabels: [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "10",
+                  "11",
+                  "12",
+                  "13",
+                  "14",
+                  "15",
+                ],
+              },
+            ],
+          }),
+        });
+        const scene = viewer.scene;
+        viewer.extend(Cesium.viewerCesiumInspectorMixin);
+
+        let layer;
+        const geoJson = "../../SampleData/test_polygon.geojson";
+        const hierarchies = [];
+        Cesium.GeoJsonDataSource.load(geoJson).then((data) => {
+          const values = data.entities.values;
+          for (let i = 0; i < values.length; i++) {
+            const hierarchy = values[i].polygon.hierarchy.getValue();
+            hierarchies.push(hierarchy);
+          }
+
+          const imageryProvider = new Cesium.PolygonImageryProvider({
+            hierarchies,
+          });
+          layer = new Cesium.ImageryLayer(imageryProvider);
+          viewer.imageryLayers.add(layer);
+          viewer.camera.flyTo({
+            destination: imageryProvider.boundingRectangle,
+            duration: 0,
+          });
+        });
+
+        const viewModel = {
+          show: true,
+          alpha: 1.0,
+          height: 0,
+        };
+        Cesium.knockout.track(viewModel);
+        const toolbar = document.getElementById("toolbar");
+        Cesium.knockout.applyBindings(viewModel, toolbar);
+        for (const name in viewModel) {
+          if (viewModel.hasOwnProperty(name)) {
+            Cesium.knockout
+              .getObservable(viewModel, name)
+              .subscribe(updateLayer);
+          }
+        }
+
+        function removeLayer() {
+          if (layer) {
+            viewer.imageryLayers.remove(layer);
+          }
+        }
+
+        function addLayer(o) {
+          const type = o.type;
+          const height = o.height;
+          console.log(o, height);
+          removeLayer();
+          const options = {
+            hierarchies,
+          };
+          switch (type) {
+            case Cesium.MaskType.WATER: {
+              options.maskType = type;
+              options.color = Cesium.Color.DODGERBLUE;
+              break;
+            }
+            case Cesium.MaskType.OFFSET: {
+              options.maskType = type;
+              const baseHeight = 20000;
+              const normalizedHeight = (height + 20000) / 40000;
+
+              const { x, y, z, w } = Cesium.Cartesian4.czm_packDepth(
+                normalizedHeight
+              );
+              console.log(x, y, z, w, height);
+              const color = Cesium.Color.fromBytes(x, y, z, w);
+              console.log(
+                Cesium.Cartesian4.czm_unpackDepth(color) * 40000 - 20000
+              );
+              options.color = color;
+              break;
+            }
+          }
+          const imageryProvider = new Cesium.PolygonImageryProvider(options);
+          layer = new Cesium.ImageryLayer(imageryProvider);
+          viewer.imageryLayers.add(layer);
+        }
+
+        function updateLayer() {
+          if (layer) {
+            layer.alpha = viewModel.alpha;
+            layer.show = viewModel.show;
+          }
+        }
+
+        const typeOptions = [
+          {
+            text: "color",
+            onselect: function () {
+              const options = {
+                type: Cesium.MaskType.NONE,
+              };
+              addLayer(options);
+            },
+          },
+          {
+            text: "water",
+            onselect: function () {
+              const options = {
+                type: Cesium.MaskType.WATER,
+              };
+              addLayer(options);
+            },
+          },
+          {
+            text: "offset",
+            onselect: function () {
+              const options = {
+                type: Cesium.MaskType.OFFSET,
+                height: 200,
+              };
+              addLayer(options);
+            },
+          },
+        ];
+        Sandcastle.addToolbarMenu(typeOptions, "type");
+
+        const offsetOptions = [
+          {
+            text: "200",
+            onselect: function () {
+              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                const options = {
+                  type: Cesium.MaskType.OFFSET,
+                  height: 200,
+                };
+                addLayer(options);
+              }
+            },
+          },
+          {
+            text: "-400",
+            onselect: function () {
+              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                const options = {
+                  type: Cesium.MaskType.OFFSET,
+                  height: -400,
+                };
+                addLayer(options);
+              }
+            },
+          },
+          {
+            text: "0",
+            onselect: function () {
+              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                const options = {
+                  type: Cesium.MaskType.OFFSET,
+                  height: -1,
+                };
+                addLayer(options);
+              }
+            },
+          },
+          {
+            text: "100",
+            onselect: function () {
+              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                const options = {
+                  type: Cesium.MaskType.OFFSET,
+                  height: 100,
+                };
+                addLayer(options);
+              }
+            },
+          },
+        ];
+        Sandcastle.addToolbarMenu(offsetOptions, "offset-height");
+
+        //Sandcastle_End
+        Sandcastle.finishedLoading();
+      };
+      if (typeof Cesium !== "undefined") {
+        window.startupCalled = true;
+        window.startup(Cesium);
+      }
+    </script>
+  </body>
+</html>

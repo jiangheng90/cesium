@@ -987,7 +987,7 @@ Globe.prototype.beginFrame = function (frameState) {
     terrainProvider.ready &&
     terrainProvider.hasWaterMask;
 
-  if (hasWaterMask && this._oceanNormalMapResourceDirty) {
+  if (this._oceanNormalMapResourceDirty) {
     // url changed, load new normal map asynchronously
     this._oceanNormalMapResourceDirty = false;
     const oceanNormalMapResource = this._oceanNormalMapResource;
