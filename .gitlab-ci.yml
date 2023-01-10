@@ -4,18 +4,13 @@ stages:
 test:
   stage: test
   image: node:18.13.0
+  variables: development
   cache:
     paths:
       - node_modules
   before_script:
       - npm install
   script:
-        - npm --silent run build-release
-        - npm --silent run test -- --browsers ChromeCI --failTaskOnError --webgl-stub --release --suppressPassed
-        - node -e "const Cesium = require('./');"
-        - node Specs/test.cjs
-        - node Specs/test.mjs
-        - node packages/engine/Specs/test.mjs
-        - node packages/widgets/Specs/test.mjs
+        - npm run test
   only:
     - gw
