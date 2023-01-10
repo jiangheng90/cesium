@@ -10,7 +10,7 @@ test:
   before_script:
       - npm install
   script:
-      - ./travis/test-release.sh
-      - ./travis/verify.sh
+      - ./gitlab/test-release.sh
+      - ./gitlab/verify.sh
   only:
     - gw
