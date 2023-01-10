@@ -10,6 +10,8 @@ test:
   before_script:
       - npm install
   script:
+      - chmod +x ./gitlab/test-release.sh
+      - chmod +x ./gitlab/verify.sh
       - ./gitlab/test-release.sh
       - ./gitlab/verify.sh
   only:
