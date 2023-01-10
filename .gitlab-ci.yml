@@ -1,20 +1,5 @@
 stages:
-  - coverage
   - test
-
-coverage:
-  stage: coverage
-  image: node:18.13.0
-  cache:
-    paths:
-      - node_modules
-  before_script:
-      - npm install
-  script:
-      - npm --silent run build
-      - npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
-  only:
-    - gw
 
 test:
   stage: test
@@ -22,6 +7,8 @@ test:
   cache:
     paths:
       - node_modules
+  before_script:
+      - npm install
   script:
         - npm --silent run build-release
         - npm --silent run test -- --browsers ChromeCI --failTaskOnError --webgl-stub --release --suppressPassed
