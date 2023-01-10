@@ -1,0 +1,26 @@
+stages:
+  - coverage
+  - test
+
+coverage:
+  stage: coverage
+  image: node:18.13.0
+  cache:
+    paths:
+      - node_modules
+  script:
+      - ./gitlab/coverage.sh
+  only:
+    - gw
+
+test:
+  stage: test
+  image: node:18.13.0
+  cache:
+    paths:
+      - node_modules
+  script:
+        - ./gitlab/test-release.sh
+        - ./gitlab/verify.sh
+  only:
+    - gw
