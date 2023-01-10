@@ -108,6 +108,10 @@ uniform float u_lambertDiffuseMultiplier;
 uniform float u_vertexShadowDarkness;
 #endif
 
+#ifdef HAS_ANY_CULL_MASK
+uniform bool u_imageryUnionClippingRegions;
+#endif
+
 varying vec3 v_positionMC;
 varying vec3 v_positionEC;
 varying vec3 v_textureCoordinates;
@@ -288,6 +292,7 @@ vec3 colorCorrect(vec3 rgb) {
 vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlend);
 vec4 computeWaterColor(vec3 positionEyeCoordinates, vec2 textureCoordinates, mat3 enuToEye, vec4 imageryColor, float specularMapValue, float fade, vec3 waveHighlightColor);
 vec4 sampleWaterColors();
+vec4 sampleCullColors();
 const float fExposure = 2.0;
 
 vec3 computeEllipsoidPosition()
@@ -309,6 +314,14 @@ vec3 computeEllipsoidPosition()
 
 void main()
 {
+#ifdef HAS_ANY_CULL_MASK
+    vec4 cullMaskColor = sampleCullColors();
+    bool isCullColor = u_imageryUnionClippingRegions ? cullMaskColor == vec4(0.0) : cullMaskColor != vec4(0.0); 
+    if(isCullColor) {
+        discard;
+    }
+#endif
+
 #ifdef TILE_LIMIT_RECTANGLE
     if (v_textureCoordinates.x < u_cartographicLimitRectangle.x || u_cartographicLimitRectangle.z < v_textureCoordinates.x ||
         v_textureCoordinates.y < u_cartographicLimitRectangle.y || u_cartographicLimitRectangle.w < v_textureCoordinates.y)
@@ -375,23 +388,23 @@ void main()
 
 #if defined(SHOW_REFLECTIVE_OCEAN) || defined(HAS_ANY_WATER_MASK)
     float mask = 0.0;
-    vec4 maskColor = vec4(0.0);
+    vec4 waterMaskColor = vec4(0.0);
 
 #ifdef SHOW_REFLECTIVE_OCEAN
     vec2 waterMaskTranslation = u_waterMaskTranslationAndScale.xy;
     vec2 waterMaskScale = u_waterMaskTranslationAndScale.zw;
     vec2 waterMaskTextureCoordinates = v_textureCoordinates.xy * waterMaskScale + waterMaskTranslation;
     waterMaskTextureCoordinates.y = 1.0 - waterMaskTextureCoordinates.y;
-    maskColor = vec4(0.3, 0.45, 0.6, 1.0);
+    waterMaskColor = vec4(0.3, 0.45, 0.6, 1.0);
     mask = texture2D(u_waterMask, waterMaskTextureCoordinates).r;
 #endif
 
 #ifdef HAS_ANY_WATER_MASK
-    maskColor = sampleWaterColors();
-    mask = maskColor.a;
+    waterMaskColor = sampleWaterColors();
+    mask = waterMaskColor.a;
 #endif
 
-    if (mask > 0.0 && maskColor.rgb != vec3(0.0))
+    if (mask > 0.0 && waterMaskColor.rgb != vec3(0.0))
     {
         mat3 enuToEye = czm_eastNorthUpToEyeCoordinates(v_positionMC, normalEC);
 
@@ -400,7 +413,7 @@ void main()
 
         vec2 textureCoordinates = mix(ellipsoidTextureCoordinates, ellipsoidFlippedTextureCoordinates, czm_morphTime * smoothstep(0.9, 0.95, normalMC.z));
 
-        color = computeWaterColor(v_positionEC, textureCoordinates, enuToEye, color, mask, fade, maskColor.rgb);
+        color = computeWaterColor(v_positionEC, textureCoordinates, enuToEye, color, mask, fade, waterMaskColor.rgb);
     }
 #endif
 

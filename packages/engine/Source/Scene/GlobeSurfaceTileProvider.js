@@ -91,6 +91,9 @@ function GlobeSurfaceTileProvider(options) {
   this.showGroundAtmosphere = false;
   this.shadows = ShadowMode.RECEIVE_ONLY;
   this.vertexShadowDarkness = 0.3;
+  // GW-ADD
+  this.imageryUnionClippingRegions = false;
+  // GW-ADD
 
   /**
    * The color to use to highlight terrain fill tiles. If undefined, fill tiles are not
@@ -1744,6 +1747,12 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
     u_onOffset: function () {
       return this.properties.onOffset;
     },
+    u_onCull: function () {
+      return this.properties.onCull;
+    },
+    u_imageryUnionClippingRegions: function () {
+      return this.properties.imageryUnionClippingRegions;
+    },
     // GW-ADD
     u_cartographicLimitRectangle: function () {
       return this.properties.localizedCartographicLimitRectangle;
@@ -1842,6 +1851,8 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
       // GW-ADD
       onWater: [],
       onOffset: [],
+      onCull: [],
+      imageryUnionClippingRegions: false,
       // GW-ADD
 
       southAndNorthLatitude: new Cartesian2(),
@@ -2065,6 +2076,8 @@ const surfaceShaderSetOptionsScratch = {
   // GW-ADD
   onWater: undefined,
   onOffset: undefined,
+  onCull: undefined,
+  imageryUnionClippingRegions: undefined,
   // GW-ADD
 };
 
@@ -2407,6 +2420,9 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
     // GW-ADD
     uniformMapProperties.onWater.length = 0;
     uniformMapProperties.onOffset.length = 0;
+    uniformMapProperties.onCull.length = 0;
+    uniformMapProperties.imageryUnionClippingRegions =
+      tileProvider.imageryUnionClippingRegions;
     // GW-ADD
 
     const frontFaceAlphaByDistanceFinal = cameraUnderground
@@ -2657,6 +2673,9 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
       uniformMapProperties.onOffset[
         numberOfDayTextures
       ] = MaskType.isOffsetMask(imageryLayer.maskType);
+      uniformMapProperties.onCull[numberOfDayTextures] = MaskType.isCullMask(
+        imageryLayer.maskType
+      );
       // GW-ADD
 
       // Update cutout rectangle
@@ -2779,6 +2798,7 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
     // GW-ADD
     surfaceShaderSetOptions.onWater = uniformMapProperties.onWater;
     surfaceShaderSetOptions.onOffset = uniformMapProperties.onOffset;
+    surfaceShaderSetOptions.onCull = uniformMapProperties.onCull;
     // GW-ADD
 
     let count = surfaceTile.renderedMesh.indices.length;

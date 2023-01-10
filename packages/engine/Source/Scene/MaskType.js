@@ -58,6 +58,14 @@ MaskType.isOffsetMask = function (type) {
  * @param {MaskType} type
  * @returns {Boolean}
  */
+MaskType.isCullMask = function (type) {
+  return type === MaskType.CULL;
+};
+
+/**
+ * @param {MaskType} type
+ * @returns {Boolean}
+ */
 MaskType.isMaterialMask = function (type) {
   return type === MaskType.MATERIAL;
 };

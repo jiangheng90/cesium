@@ -109,8 +109,10 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
   // GW-ADD
   const onWater = options.onWater;
   const onOffset = options.onOffset;
+  const onCull = options.onCull;
   let hasAnyWaterMask = false;
   let hasAnyOffsetMask = false;
+  let hasAnyCullMask = false;
   for (let i = 0; i < onWater.length; i++) {
     if (onWater[i]) {
       hasAnyWaterMask = true;
@@ -121,6 +123,13 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
   for (let i = 0; i < onOffset.length; i++) {
     if (onOffset[i]) {
       hasAnyOffsetMask = true;
+      break;
+    }
+  }
+
+  for (let i = 0; i < onCull.length; i++) {
+    if (onCull[i]) {
+      hasAnyCullMask = true;
       break;
     }
   }
@@ -185,7 +194,8 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     (applyDayNightAlpha << 30);
 
   // GW-ADD
-  const extensionFlags = hasAnyWaterMask | (hasAnyOffsetMask << 1);
+  const extensionFlags =
+    hasAnyWaterMask | (hasAnyOffsetMask << 1) | (hasAnyCullMask << 2);
   const key = `${flags}-${extensionFlags}`;
   // GW-ADD
   let currentClippingShaderState = 0;
@@ -347,6 +357,9 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     if (hasAnyOffsetMask) {
       vs.defines.push("HAS_ANY_OFFSET_MASK");
     }
+    if (hasAnyCullMask) {
+      fs.defines.push("HAS_ANY_CULL_MASK");
+    }
     // GW-ADD
 
     let computeDayColor =
@@ -366,7 +379,8 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
       // GW-ADD
       const isWaterMask = onWater[i];
       const isOffsetMask = onOffset[i];
-      if (isWaterMask || isOffsetMask) {
+      const isCullMask = onCull[i];
+      if (isWaterMask || isOffsetMask || isCullMask) {
         continue;
       }
       // GW-ADD
@@ -434,6 +448,30 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
         return finalSeaColor;
       }`;
       fs.sources.push(sampleWaterColors);
+    }
+
+    if (hasAnyCullMask) {
+      let sampleOffsetColors = `
+      vec4 sampleCullColors() {
+        vec4 finalCullColor =  vec4(0.0);
+      `;
+      for (let i = 0; i < numberOfDayTextures; ++i) {
+        const isOffsetMask = onCull[i];
+        if (!isOffsetMask) {
+          continue;
+        }
+        sampleOffsetColors += `
+          vec2 cullMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
+          vec2 cullMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
+          vec2 cullMaskTextureCoordinates${i} = v_textureCoordinates.xy * cullMaskScale${i} + cullMaskTranslation${i};
+          vec4 cullColor${i} = texture2D(u_dayTextures[${i}], cullMaskTextureCoordinates${i});
+          finalCullColor = cullColor${i};
+          `;
+      }
+      sampleOffsetColors += `
+        return finalCullColor;
+      }`;
+      fs.sources.push(sampleOffsetColors);
     }
     // GW-ADD
 

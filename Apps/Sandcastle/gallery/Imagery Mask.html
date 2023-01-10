@@ -50,9 +50,18 @@
             <td>type</td>
             <td id="type"></td>
           </tr>
-          <tr>
+          <tr id="height-options" style="visibility: hidden">
             <td>offset-height</td>
             <td id="offset-height"></td>
+          </tr>
+          <tr id="cull-options" style="visibility: hidden">
+            <td>union-clipping-regions</td>
+            <td>
+              <input
+                type="checkbox"
+                data-bind="checked: unionClippingRegions"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -122,7 +131,7 @@
         const viewModel = {
           show: true,
           alpha: 1.0,
-          height: 0,
+          unionClippingRegions: false,
         };
         Cesium.knockout.track(viewModel);
         const toolbar = document.getElementById("toolbar");
@@ -141,17 +150,34 @@
           }
         }
 
+        function setWidget(type) {
+          const heightOptionsElement = document.getElementById(
+            "height-options"
+          );
+          console.log(Cesium.MaskType.isOffsetMask(type));
+          heightOptionsElement.style.visibility = Cesium.MaskType.isOffsetMask(
+            type
+          )
+            ? "visible"
+            : "hidden";
+
+          const cullOptionsElement = document.getElementById("cull-options");
+          cullOptionsElement.style.visibility = Cesium.MaskType.isCullMask(type)
+            ? "visible"
+            : "hidden";
+        }
+
         function addLayer(o) {
           const type = o.type;
           const height = o.height;
-          console.log(o, height);
           removeLayer();
           const options = {
             hierarchies,
+            maskType: type,
           };
+          setWidget(type);
           switch (type) {
             case Cesium.MaskType.WATER: {
-              options.maskType = type;
               options.color = Cesium.Color.DODGERBLUE;
               break;
             }
@@ -163,11 +189,7 @@
               const { x, y, z, w } = Cesium.Cartesian4.czm_packDepth(
                 normalizedHeight
               );
-              console.log(x, y, z, w, height);
               const color = Cesium.Color.fromBytes(x, y, z, w);
-              console.log(
-                Cesium.Cartesian4.czm_unpackDepth(color) * 40000 - 20000
-              );
               options.color = color;
               break;
             }
@@ -182,7 +204,11 @@
             layer.alpha = viewModel.alpha;
             layer.show = viewModel.show;
           }
+          viewer.scene.globe.imageryUnionClippingRegions =
+            viewModel.unionClippingRegions;
         }
+
+        let height = 200;
 
         const typeOptions = [
           {
@@ -208,7 +234,17 @@
             onselect: function () {
               const options = {
                 type: Cesium.MaskType.OFFSET,
-                height: 200,
+                height: height,
+              };
+              addLayer(options);
+            },
+          },
+          {
+            text: "cull",
+            onselect: function () {
+              console.log(Cesium.MaskType.CULL);
+              const options = {
+                type: Cesium.MaskType.CULL,
               };
               addLayer(options);
             },
@@ -221,33 +257,10 @@
             text: "200",
             onselect: function () {
               if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                height = 200;
                 const options = {
                   type: Cesium.MaskType.OFFSET,
-                  height: 200,
-                };
-                addLayer(options);
-              }
-            },
-          },
-          {
-            text: "-400",
-            onselect: function () {
-              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
-                const options = {
-                  type: Cesium.MaskType.OFFSET,
-                  height: -400,
-                };
-                addLayer(options);
-              }
-            },
-          },
-          {
-            text: "0",
-            onselect: function () {
-              if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
-                const options = {
-                  type: Cesium.MaskType.OFFSET,
-                  height: -1,
+                  height: height,
                 };
                 addLayer(options);
               }
@@ -257,9 +270,10 @@
             text: "100",
             onselect: function () {
               if (layer && layer.maskType === Cesium.MaskType.OFFSET) {
+                height = 100;
                 const options = {
                   type: Cesium.MaskType.OFFSET,
-                  height: 100,
+                  height: height,
                 };
                 addLayer(options);
               }

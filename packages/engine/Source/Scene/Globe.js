@@ -638,6 +638,23 @@ Object.defineProperties(Globe.prototype, {
       return this._translucency;
     },
   },
+
+  // GW-ADD
+  /**
+   * @memberof Globe.prototype
+   * @type {Boolean}
+   *
+   */
+  imageryUnionClippingRegions: {
+    get: function () {
+      return this._surface.tileProvider.imageryUnionClippingRegions;
+    },
+
+    set: function (value) {
+      this._surface.tileProvider.imageryUnionClippingRegions = value;
+    },
+  },
+  // GW-ADD
 });
 
 function makeShadersDirty(globe) {

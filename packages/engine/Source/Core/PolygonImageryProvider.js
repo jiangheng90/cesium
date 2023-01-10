@@ -177,10 +177,10 @@ function PolygonImageryProvider(options) {
     : new GeographicTilingScheme({ ellipsoid: options.ellipsoid });
   this._color = defaultValue(options.color, Color.YELLOW);
   this._colorInBytes = [
-    parseInt(this._color.red * 255),
-    parseInt(this._color.green * 255),
-    parseInt(this._color.blue * 255),
-    parseInt(this._color.alpha * 255),
+    Math.round(this._color.red * 255),
+    Math.round(this._color.green * 255),
+    Math.round(this._color.blue * 255),
+    Math.round(this._color.alpha * 255),
   ];
   this._errorEvent = new Event();
   this._tileWidth = defaultValue(options.tileWidth, 256);
