@@ -4,7 +4,6 @@ stages:
 test:
   stage: test
   image: node:18.13.0
-  variables: development
   cache:
     paths:
       - node_modules
