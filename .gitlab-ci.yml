@@ -9,7 +9,8 @@ coverage:
     paths:
       - node_modules
   script:
-      - ./gitlab/coverage.sh
+      - npm --silent run build
+      - npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
   only:
     - gw
 
@@ -20,7 +21,12 @@ test:
     paths:
       - node_modules
   script:
-        - ./gitlab/test-release.sh
-        - ./gitlab/verify.sh
+        - npm --silent run build-release
+        - npm --silent run test -- --browsers ChromeCI --failTaskOnError --webgl-stub --release --suppressPassed
+        - node -e "const Cesium = require('./');"
+        - node Specs/test.cjs
+        - node Specs/test.mjs
+        - node packages/engine/Specs/test.mjs
+        - node packages/widgets/Specs/test.mjs
   only:
     - gw
