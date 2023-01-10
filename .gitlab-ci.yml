@@ -10,7 +10,7 @@ test:
   before_script:
       - npm install
   script:
-      - chmod +x ./travis/test-release.sh
-      - chmod +x ./travis/verify.sh
+      - ./travis/test-release.sh
+      - ./travis/verify.sh
   only:
     - gw
