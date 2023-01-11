@@ -52,6 +52,9 @@ import StencilConstants from "./StencilConstants.js";
 import TileBoundingRegion from "./TileBoundingRegion.js";
 import TileBoundingSphere from "./TileBoundingSphere.js";
 import TileOrientedBoundingBox from "./TileOrientedBoundingBox.js";
+// GW-ADD
+import RequestScheduler from "../Core/RequestScheduler.js";
+// GW-ADD
 
 /**
  * A {@link https://github.com/CesiumGS/3d-tiles/tree/main/specification|3D Tiles tileset},
@@ -971,13 +974,58 @@ function Cesium3DTileset(options) {
 
   this._schemaLoader = undefined;
 
+  // GW-ADD
+  this.maxTileDistanceToCamera = 100000000;
+  this._maxTileDistanceToCameraFactor = 1.2;
+  this._maxTileGeometricErrorToDestroy = defaultValue(
+    options.maxTileGeometricErrorToDestroy,
+    3.0
+  );
+  this._useVisibleByDistanceToCamera = defaultValue(
+    options.useVisibleByDistanceToCamera,
+    false
+  );
+
+  this._isGeoway3DTileset = defaultValue(options.isGeoway3DTileset, false);
+
+  /**
+   * @type {Boolean}
+   * @default false
+   */
+  this._supportSubdomains = false;
+
+  if (options.subdomains instanceof Array && options.subdomains.length > 0) {
+    this._supportSubdomains = true;
+    /**
+     * @type {Array}
+     * @default undefined
+     */
+    this._subdomains = options.subdomains.slice();
+    /**
+     * @type {Number}
+     * @default undefined
+     */
+    this._subdomainsPollingCount = 0;
+  }
+
+  this._offsetHeight = 0;
+  this._needUpdate = defaultValue(options.needUpdate, true);
+  // GW-ADD
+
   const that = this;
   let resource;
   this._readyPromise = Promise.resolve(options.url)
     .then(function (url) {
       let basePath;
       resource = Resource.createIfNeeded(url);
+      // GW-ADD
+      resource = that.getResourceFromExtraServer(resource);
+      // GW-ADD
       that._resource = resource;
+
+      // GeowayGlobe-ADD
+      that._serverKey = RequestScheduler.getServerKey(url);
+      // GeowayGlobe-ADD
 
       // ion resources have a credits property we can use for additional attribution.
       that._credits = resource.credits;
@@ -991,13 +1039,70 @@ function Cesium3DTileset(options) {
       that._url = resource.url;
       that._basePath = basePath;
 
+      /* GW-UPDATE      
       return Cesium3DTileset.loadJson(resource);
+      */
+      if (
+        that._isGeoway3DTileset &&
+        (options.globalScreenSpaceErrorFactor === null ||
+          options.globalScreenSpaceErrorFactor === undefined ||
+          options.globalScreenSpaceErrorFactor === "")
+      ) {
+        const configUrl = url.replace("tileset.json", "config.json");
+
+        let configResource = Resource.createIfNeeded(configUrl);
+        if (that._supportSubdomains) {
+          configResource = that.getResourceFromExtraServer(configResource);
+        }
+
+        const getConfigDataPromise = configResource.fetchJson();
+
+        return getConfigDataPromise
+          .then(function (config) {
+            if (
+              config &&
+              config.globalScreenSpaceErrorFactor !== undefined &&
+              config.globalScreenSpaceErrorFactor !== null &&
+              config.globalScreenSpaceErrorFactor !== ""
+            ) {
+              if (!isNaN(Number(config.globalScreenSpaceErrorFactor))) {
+                that._globalScreenSpaceErrorFactor = defaultValue(
+                  Number(config.globalScreenSpaceErrorFactor),
+                  1.0
+                );
+              }
+
+              const offsetHeight = Number(config.tilesetHeight);
+              if (!isNaN(offsetHeight)) {
+                that._offsetHeight = offsetHeight;
+              }
+            }
+
+            return Cesium3DTileset.loadJson(resource);
+          })
+          .catch(function () {
+            return Cesium3DTileset.loadJson(resource);
+          });
+        // eslint-disable-next-line no-else-return
+      } else {
+        return Cesium3DTileset.loadJson(resource);
+      }
+      // GW-UPDATE
     })
     .then(function (tilesetJson) {
       if (that.isDestroyed()) {
         return;
       }
+      // GW-ADD
+      if (that._isGeoway3DTileset) {
+        const root = makeTile(that, resource, tilesetJson.root);
+        const offset = new Cartesian3();
+        Cartesian3.normalize(root.boundingSphere.center, offset);
+        Cartesian3.multiplyByScalar(offset, that._offsetHeight, offset);
 
+        Matrix4.fromTranslation(offset, that._modelMatrix);
+      }
+      // GW-ADD
       // This needs to be called before loadTileset() so tile metadata
       // can be initialized synchronously in the Cesium3DTile constructor
       return processMetadataExtension(that, tilesetJson);
@@ -1006,7 +1111,9 @@ function Cesium3DTileset(options) {
       if (that.isDestroyed()) {
         return;
       }
-
+      // GW-ADD
+      resource = that.getResourceFromExtraServer(resource);
+      // GW-ADD
       that._root = that.loadTileset(resource, tilesetJson);
 
       // Handle legacy gltfUpAxis option
@@ -1073,6 +1180,13 @@ function Cesium3DTileset(options) {
 
       return that;
     });
+
+  // GW-ADD
+  this._globalScreenSpaceErrorFactor = defaultValue(
+    options.globalScreenSpaceErrorFactor,
+    1.0
+  );
+  // GW-ADD
 }
 
 Object.defineProperties(Cesium3DTileset.prototype, {
@@ -1998,6 +2112,9 @@ Cesium3DTileset.prototype.loadTileset = function (
   tilesetJson,
   parentTile
 ) {
+  // GW-ADD
+  resource = this.getResourceFromExtraServer(resource);
+  // GW-ADD
   const asset = tilesetJson.asset;
   if (!defined(asset)) {
     throw new RuntimeError("Tileset must have an asset property.");
@@ -2379,6 +2496,9 @@ Cesium3DTileset.prototype.prePassesUpdate = function (frameState) {
   if (frameState.newFrame) {
     this._cache.reset();
   }
+  // GW-ADD
+  updateMaxTileDistanceToCamera(this, frameState);
+  // GW-ADD
 };
 
 function cancelOutOfViewRequests(tileset, frameState) {
@@ -2395,6 +2515,11 @@ function cancelOutOfViewRequests(tileset, frameState) {
       ++removeCount;
       continue;
     } else if (outOfView) {
+      // GW-ADD
+      if (tile.isDestroyed()) {
+        continue;
+      }
+      // GW-ADD
       // RequestScheduler will take care of cancelling it
       tile.cancelRequests();
       ++removeCount;
@@ -2497,7 +2622,13 @@ function processTiles(tileset, frameState) {
   const length = tiles.length;
   // Process tiles in the PROCESSING state so they will eventually move to the READY state.
   for (let i = 0; i < length; ++i) {
+    /* GW-UPDATE
     tiles[i].process(tileset, frameState);
+     */
+    if (!tiles[i].isDestroyed()) {
+      tiles[i].process(tileset, frameState);
+    }
+    // GW-UPDATE
   }
 }
 
@@ -2805,10 +2936,137 @@ function unloadTile(tileset, tile) {
   tile.unloadContent();
 }
 
+/* GW-UPDATE
 function destroyTile(tileset, tile) {
   tileset._cache.unloadTile(tileset, tile, unloadTile);
   tile.destroy();
 }
+ */
+function destroyTile(tileset, tile, clearParentAndChild) {
+  tileset._cache.unloadTile(tileset, tile, unloadTile);
+  tile.destroy(clearParentAndChild);
+}
+// GW-UPDATE
+
+// GW-ADD
+function updateMaxTileDistanceToCamera(tileset, frameState) {
+  if (frameState.mode === SceneMode.SCENE3D) {
+    const camera = frameState.camera;
+    //camera.pitch
+    if (camera.positionCartographic.height < 50) {
+      tileset.maxTileDistanceToCamera = 1000;
+    } else {
+      tileset.maxTileDistanceToCamera =
+        camera.positionCartographic.height *
+        20 *
+        tileset._maxTileDistanceToCameraFactor;
+    }
+  } else {
+    tileset.maxTileDistanceToCamera = 100000000;
+  }
+}
+
+Cesium3DTileset.prototype.destroySubTileset = function (
+  curTile,
+  bParentInTileset,
+  depth
+) {
+  if (/*curTile.isDestroyed() || */ !curTile.contentReady) {
+    return;
+  }
+
+  bParentInTileset = defaultValue(bParentInTileset, false);
+  depth = defaultValue(depth, 0);
+  // let curDepth = depth;
+  // if(depth === 0){
+  //   rootUrl = curTile && curTile._contentResource && curTile._contentResource.url;
+  //   let start = rootUrl.indexOf("json");
+  //   if(start > 0)
+  //     rootIsJson = true;
+  //   else
+  //     rootIsJson = false;
+  // }
+
+  let bInTileset = bParentInTileset;
+  if (curTile.hasTilesetContent) {
+    bInTileset = true;
+  }
+  // else{
+  //   let start = curTile._contentResource.url.indexOf("json");
+  //   if(start > 0)
+  //     bInTileset = true;
+  // }
+
+  const tileset = this;
+  // let root = curTile;
+  // let stack = scratchStack;
+  const stack = [];
+  for (let i = 0; i < curTile.children.length; ++i) {
+    stack.push(curTile.children[i]);
+  }
+
+  while (stack.length > 0) {
+    const tile = stack.pop();
+
+    if (tile.hasTilesetContent) {
+      tileset.destroySubTileset(tile, true, depth + 1);
+    } else {
+      // if(tile.contentIsTiesetJson)
+      //   continue;
+
+      const children = tile.children;
+      const length = children.length;
+      for (let i = 0; i < length; ++i) {
+        stack.push(children[i]);
+      }
+
+      if (bInTileset) {
+        // tile.rootUrl = rootUrl;
+        // if(!rootIsJson && depth === 0)
+        //   tile.rootUrl += "-----";
+        // tile.rootIsJson = rootIsJson;
+        // tile.deletedepth = depth;
+        // tile.bInTileset = bInTileset;
+        destroyTile(tileset, tile, true);
+        --tileset._statistics.numberOfTilesTotal;
+        // tileset._destroyedTileCache.push(tile);
+      } else {
+        tileset._cache.unloadTile(tileset, tile, unloadTile);
+        // tileset._unloadedTileCache.push(tile);
+      }
+      tileset.haveDeletedTileCountInCurFrame++;
+    }
+  }
+
+  if (bParentInTileset && depth > 1) {
+    // curTile.rootUrl = rootUrl;
+    // curTile.rootUrl += "-----";
+    // curTile.rootIsJson = rootIsJson;
+    // curTile.deletedepth = depth;
+    // curTile.bInTileset = bInTileset;
+    destroyTile(tileset, curTile, true);
+    --tileset._statistics.numberOfTilesTotal;
+    // tileset._destroyedTileCache.push(curTile);
+  } else {
+    // eslint-disable-next-line no-lonely-if
+    if (curTile.hasTilesetContent) {
+      curTile.children = [];
+      // curTile.parent = undefined;
+
+      curTile.hasTilesetContent = false;
+      curTile._content = curTile._content && curTile._content.destroy();
+      curTile._contentState = Cesium3DTileContentState.UNLOADED;
+      curTile._contentReadyToProcessPromise = undefined;
+      curTile._contentReadyPromise = undefined;
+    } else {
+      tileset._cache.unloadTile(tileset, curTile, unloadTile);
+    }
+    // tileset._unloadedTileCache.push(curTile);
+  }
+
+  tileset.haveDeletedTileCountInCurFrame++;
+};
+// GW-ADD
 
 /**
  * Unloads all tiles that weren't selected the previous frame.  This can be used to
@@ -2919,7 +3177,9 @@ function update(tileset, frameState, passStatistics, passOptions) {
   const statistics = tileset._statistics;
   statistics.clear();
 
+  /* GW-DELETE
   const isRender = passOptions.isRender;
+   */
 
   // Resets the visibility check for each pass
   ++tileset._updatedVisibilityFrame;
@@ -2942,6 +3202,7 @@ function update(tileset, frameState, passStatistics, passOptions) {
   // Update pass statistics
   Cesium3DTilesetStatistics.clone(statistics, passStatistics);
 
+  /* GW-DELETE  
   if (isRender) {
     const credits = tileset._credits;
     if (defined(credits) && statistics.selected !== 0) {
@@ -2953,7 +3214,7 @@ function update(tileset, frameState, passStatistics, passOptions) {
       }
     }
   }
-
+  */
   return ready;
 }
 
@@ -3142,6 +3403,26 @@ Cesium3DTileset.checkSupportedExtensions = function (extensionsRequired) {
     }
   }
 };
+
+// GW-ADD
+/**
+ * @param {Resource} resource
+ * @private
+ */
+Cesium3DTileset.prototype.getResourceFromExtraServer = function (resource) {
+  if (!this._supportSubdomains) {
+    return resource;
+  }
+
+  const index = this._subdomainsPollingCount % this._subdomains.length;
+  const templateValues = {
+    s: this._subdomains[index],
+  };
+  resource.setTemplateValues(templateValues);
+  this._subdomainsPollingCount++;
+  return resource;
+};
+// GW-ADD
 
 /**
  * Optimization option. Used as a callback when {@link Cesium3DTileset#foveatedScreenSpaceError} is true to control how much to raise the screen space error for tiles outside the foveated cone,

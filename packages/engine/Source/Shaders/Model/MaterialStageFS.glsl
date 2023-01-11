@@ -62,6 +62,28 @@ vec3 computeNormal(ProcessedAttributes attributes)
 }
 #endif
 
+#if defined(HAS_TEXCOORD_2) && defined(HAS_TEXCOORD_3)
+#ifndef WEBGL_2
+#extension GL_EXT_shader_texture_lod : enable
+#endif
+
+void calculateMipLevel(in vec2 inTexCoord, in vec2 vecTile, inout float mipLevel)
+{
+    vec2 dx = dFdx(inTexCoord * vecTile.x);
+    vec2 dy = dFdy(inTexCoord * vecTile.y);
+    float dotX = dot(dx, dx);
+    float dotY = dot(dy, dy);
+    float dMax = max(dotX, dotY);
+    float dMin = min(dotX, dotY);
+    float offset = (dMax - dMin) / (dMax + dMin);
+    offset = clamp(offset, 0.0, 1.0);
+    float d = dMax * (1.0 - offset) + dMin * offset;
+    mipLevel = 0.5 * log2(d);
+    mipLevel -= 2.;
+    mipLevel = mipLevel > 0. ? mipLevel : 0.;
+}
+#endif
+
 void materialStage(inout czm_modelMaterial material, ProcessedAttributes attributes, SelectedFeature feature)
 {
     #ifdef HAS_NORMALS
@@ -77,7 +99,30 @@ void materialStage(inout czm_modelMaterial material, ProcessedAttributes attribu
         baseColorTexCoords = computeTextureTransform(baseColorTexCoords, u_baseColorTextureTransform);
         #endif
 
-    baseColorWithAlpha = czm_srgbToLinear(texture2D(u_baseColorTexture, baseColorTexCoords));
+        #if defined(HAS_TEXCOORD_2) && defined(HAS_TEXCOORD_3)
+        vec2 tileUV = TEXCOORD_BASE_COLOR;
+        vec2 tileOffset = vec2(v_texCoord_2.x, v_texCoord_3.x);
+        vec2 tileSize = vec2(v_texCoord_2.y, v_texCoord_3.y);
+            #ifndef WEBGL_2
+            float textureSizeX = 512.;
+            float textureSizeY = 512.;
+            #else
+            float textureSizeX = float(int(textureSize(u_baseColorTexture, 0).x)) / 2.;
+            float textureSizeY = float(int(textureSize(u_baseColorTexture, 0).y)) / 2.;
+            #endif
+        vec2 tSize = vec2(textureSizeX, textureSizeY); 
+        vec2 fractTileUV = fract(tileUV);
+        float mipLevel = 0.;
+        calculateMipLevel(tileUV, tSize, mipLevel);
+        vec2 tileCoord = tileOffset + tileSize * fractTileUV;
+            #ifndef WEBGL_2
+        baseColorWithAlpha = czm_srgbToLinear(texture2DLodEXT(u_baseColorTexture, tileCoord, mipLevel));
+            #else
+        baseColorWithAlpha = czm_srgbToLinear(textureLod(u_baseColorTexture, tileCoord, mipLevel));
+            #endif
+        #else
+        baseColorWithAlpha = czm_srgbToLinear(texture2D(u_baseColorTexture, baseColorTexCoords));
+        #endif
 
         #ifdef HAS_BASE_COLOR_FACTOR
         baseColorWithAlpha *= u_baseColorFactor;

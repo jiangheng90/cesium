@@ -1592,6 +1592,12 @@ GlobeSurfaceTileProvider.prototype._onLayerShownOrHidden = function (
 
 const scratchClippingPlanesMatrix = new Matrix4();
 const scratchInverseTransposeClippingPlanesMatrix = new Matrix4();
+// GW-ADD
+const onWater = [];
+const onOffset = [];
+const onCull = [];
+const onMaterial = [];
+// GW-ADD
 function createTileUniformMap(frameState, globeSurfaceTileProvider) {
   const uniformMap = {
     u_initialColor: function () {
@@ -1741,15 +1747,6 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
       return frameState.context.defaultTexture;
     },
     // GW-ADD
-    u_onWater: function () {
-      return this.properties.onWater;
-    },
-    u_onOffset: function () {
-      return this.properties.onOffset;
-    },
-    u_onCull: function () {
-      return this.properties.onCull;
-    },
     u_imageryUnionClippingRegions: function () {
       return this.properties.imageryUnionClippingRegions;
     },
@@ -1849,9 +1846,6 @@ function createTileUniformMap(frameState, globeSurfaceTileProvider) {
       dayIntensity: 0.0,
       colorsToAlpha: [],
       // GW-ADD
-      onWater: [],
-      onOffset: [],
-      onCull: [],
       imageryUnionClippingRegions: false,
       // GW-ADD
 
@@ -2077,7 +2071,7 @@ const surfaceShaderSetOptionsScratch = {
   onWater: undefined,
   onOffset: undefined,
   onCull: undefined,
-  imageryUnionClippingRegions: undefined,
+  onMaterial: undefined,
   // GW-ADD
 };
 
@@ -2418,9 +2412,10 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
     uniformMapProperties.zoomedOutOceanSpecularIntensity =
       tileProvider.zoomedOutOceanSpecularIntensity;
     // GW-ADD
-    uniformMapProperties.onWater.length = 0;
-    uniformMapProperties.onOffset.length = 0;
-    uniformMapProperties.onCull.length = 0;
+    onWater.length = 0;
+    onOffset.length = 0;
+    onCull.length = 0;
+    onMaterial.length = 0;
     uniformMapProperties.imageryUnionClippingRegions =
       tileProvider.imageryUnionClippingRegions;
     // GW-ADD
@@ -2667,13 +2662,14 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
         uniformMapProperties.dayTextureSplit[numberOfDayTextures] !== 0.0;
 
       // GW-ADD
-      uniformMapProperties.onWater[numberOfDayTextures] = MaskType.isWaterMask(
+      onWater[numberOfDayTextures] = MaskType.isWaterMask(
         imageryLayer.maskType
       );
-      uniformMapProperties.onOffset[
-        numberOfDayTextures
-      ] = MaskType.isOffsetMask(imageryLayer.maskType);
-      uniformMapProperties.onCull[numberOfDayTextures] = MaskType.isCullMask(
+      onOffset[numberOfDayTextures] = MaskType.isOffsetMask(
+        imageryLayer.maskType
+      );
+      onCull[numberOfDayTextures] = MaskType.isCullMask(imageryLayer.maskType);
+      onMaterial[numberOfDayTextures] = MaskType.isMaterialMask(
         imageryLayer.maskType
       );
       // GW-ADD
@@ -2796,9 +2792,10 @@ function addDrawCommandsForTile(tileProvider, tile, frameState) {
     surfaceShaderSetOptions.showUndergroundColor = showUndergroundColor;
     surfaceShaderSetOptions.translucent = translucent;
     // GW-ADD
-    surfaceShaderSetOptions.onWater = uniformMapProperties.onWater;
-    surfaceShaderSetOptions.onOffset = uniformMapProperties.onOffset;
-    surfaceShaderSetOptions.onCull = uniformMapProperties.onCull;
+    surfaceShaderSetOptions.onWater = onWater;
+    surfaceShaderSetOptions.onOffset = onOffset;
+    surfaceShaderSetOptions.onCull = onCull;
+    surfaceShaderSetOptions.onMaterial = onMaterial;
     // GW-ADD
 
     let count = surfaceTile.renderedMesh.indices.length;

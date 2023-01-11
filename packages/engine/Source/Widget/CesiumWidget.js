@@ -287,6 +287,10 @@ function CesiumWidget(container, options) {
       maximumRenderTimeChange: options.maximumRenderTimeChange,
       depthPlaneEllipsoidOffset: options.depthPlaneEllipsoidOffset,
       msaaSamples: options.msaaSamples,
+      //GW-ADD
+      useIndependenceVolumeCulling3DTiles:
+        options.useIndependenceVolumeCulling3DTiles,
+      //GW-ADD
     });
     this._scene = scene;
 

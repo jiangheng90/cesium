@@ -293,6 +293,7 @@ vec4 computeDayColor(vec4 initialColor, vec3 textureCoordinates, float nightBlen
 vec4 computeWaterColor(vec3 positionEyeCoordinates, vec2 textureCoordinates, mat3 enuToEye, vec4 imageryColor, float specularMapValue, float fade, vec3 waveHighlightColor);
 vec4 sampleWaterColors();
 vec4 sampleCullColors();
+vec4 sampleMaterialColors();
 const float fExposure = 2.0;
 
 vec3 computeEllipsoidPosition()
@@ -426,6 +427,9 @@ void main()
     materialInput.slope = v_slope;
     materialInput.height = v_height;
     materialInput.aspect = v_aspect;
+#ifdef HAS_ANY_MATERIAL_MASK
+    materialInput.mask = sampleMaterialColors();
+#endif
     czm_material material = czm_getMaterial(materialInput);
     vec4 materialColor = vec4(material.diffuse, material.alpha);
     color = alphaBlend(materialColor, color);

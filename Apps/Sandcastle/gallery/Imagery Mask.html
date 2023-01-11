@@ -72,7 +72,7 @@
         //Sandcastle_Begin
         // Create the viewer.
         const viewer = new Cesium.Viewer("cesiumContainer", {
-          imageryProvider: new Cesium.GridImageryProvider(),
+          // imageryProvider: new Cesium.GridImageryProvider(),
           terrainProvider: new Cesium.TiledTerrainProvider({
             connections: [
               {
@@ -154,7 +154,6 @@
           const heightOptionsElement = document.getElementById(
             "height-options"
           );
-          console.log(Cesium.MaskType.isOffsetMask(type));
           heightOptionsElement.style.visibility = Cesium.MaskType.isOffsetMask(
             type
           )
@@ -167,6 +166,30 @@
             : "hidden";
         }
 
+        function getMaterial() {
+          return new Cesium.Material({
+            fabric: {
+              type: "MaskTest",
+              materials: {},
+              uniforms: {},
+              source: `
+                      czm_material czm_getMaterial(czm_materialInput materialInput) {
+                          czm_material material = czm_getDefaultMaterial(materialInput);
+
+                          if(materialInput.mask != vec4(0.0)) {
+                            material.diffuse =  vec3(1.0, 0.0, 0.0);
+                            material.alpha = 0.5;
+                          } else {
+                            material.alpha = 0.;
+                          }
+                          return material;
+                      }
+                `,
+            },
+            translucent: false,
+          });
+        }
+
         function addLayer(o) {
           const type = o.type;
           const height = o.height;
@@ -176,13 +199,15 @@
             maskType: type,
           };
           setWidget(type);
+          viewer.scene.globe.material =
+            type === Cesium.MaskType.MATERIAL ? getMaterial() : undefined;
+
           switch (type) {
             case Cesium.MaskType.WATER: {
               options.color = Cesium.Color.DODGERBLUE;
               break;
             }
             case Cesium.MaskType.OFFSET: {
-              options.maskType = type;
               const baseHeight = 20000;
               const normalizedHeight = (height + 20000) / 40000;
 
@@ -242,9 +267,17 @@
           {
             text: "cull",
             onselect: function () {
-              console.log(Cesium.MaskType.CULL);
               const options = {
                 type: Cesium.MaskType.CULL,
+              };
+              addLayer(options);
+            },
+          },
+          {
+            text: "material",
+            onselect: function () {
+              const options = {
+                type: Cesium.MaskType.MATERIAL,
               };
               addLayer(options);
             },

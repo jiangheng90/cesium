@@ -179,6 +179,10 @@ function Context(canvas, options) {
     "EXT_color_buffer_half_float",
   ]);
 
+  // GW-ADD
+  this._shaderTextureLod = !!getExtension(gl, ["EXT_shader_texture_lod"]);
+  // GW-ADD
+
   this._s3tc = !!getExtension(gl, [
     "WEBGL_compressed_texture_s3tc",
     "MOZ_WEBGL_compressed_texture_s3tc",

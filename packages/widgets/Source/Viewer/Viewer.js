@@ -508,6 +508,10 @@ Either specify options.terrainProvider instead or set options.baseLayerPicker to
     maximumRenderTimeChange: options.maximumRenderTimeChange,
     depthPlaneEllipsoidOffset: options.depthPlaneEllipsoidOffset,
     msaaSamples: options.msaaSamples,
+    //GW-ADD
+    useIndependenceVolumeCulling3DTiles:
+      options.useIndependenceVolumeCulling3DTiles,
+    //GW-ADD
   });
 
   let dataSourceCollection = options.dataSources;

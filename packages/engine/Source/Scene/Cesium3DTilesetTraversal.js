@@ -10,6 +10,15 @@ import Cesium3DTileRefine from "./Cesium3DTileRefine.js";
 function Cesium3DTilesetTraversal() {}
 
 function isVisible(tile) {
+  if (tile._useVisibleByDistanceToCamera) {
+    return (
+      tile._visible &&
+      tile._inRequestVolume &&
+      // GW-ADD
+      tile._bVisibleByDistanceToCamera
+      // GW-ADD
+    );
+  }
   return tile._visible && tile._inRequestVolume;
 }
 
@@ -37,6 +46,19 @@ const selectionTraversal = {
 
 const descendantSelectionDepth = 2;
 
+// GW-ADD
+function reCalculateTilesetStatistics(tileset, root) {
+  tileset._statistics.numberOfTilesTotal++;
+  if (root.children instanceof Array && root.children.length > 0) {
+    for (let i = 0; i < root.children.length; i++) {
+      const child = root.children[i];
+      tileset._statistics.numberOfTilesTotal++;
+      reCalculateTilesetStatistics(tileset, child);
+    }
+  }
+}
+// GW-ADD
+
 Cesium3DTilesetTraversal.selectTiles = function (tileset, frameState) {
   tileset._requestedTiles.length = 0;
 
@@ -48,14 +70,37 @@ Cesium3DTilesetTraversal.selectTiles = function (tileset, frameState) {
   tileset._selectedTilesToStyle.length = 0;
   tileset._emptyTiles.length = 0;
   tileset._hasMixedContent = false;
+  // GW-ADD
+  tileset.haveDeletedTileCountInCurFrame = 0;
+  // GW-ADD
 
   const root = tileset.root;
   updateTile(tileset, root, frameState);
 
   // The root tile is not visible
   if (!isVisible(root)) {
+    // GW-ADD
+    if (tileset.visible) {
+      if (frameState.useIndependenceVolumeCulling3DTiles) {
+        tileset.timeOut = setTimeout(function () {
+          tileset.destroySubTileset(root);
+          tileset._statistics.numberOfTilesTotal = 0;
+          reCalculateTilesetStatistics(tileset, root);
+        }, 2000);
+      }
+      tileset.visible = false;
+    }
+    // GW-ADD
     return;
   }
+
+  // GW-ADD
+  tileset.visible = true;
+  if (tileset.timeOut) {
+    clearInterval(tileset.timeOut);
+    tileset.timeOut = undefined;
+  }
+  // GW-ADD
 
   // The tileset doesn't meet the SSE requirement, therefore the tree does not need to be rendered
   if (
@@ -422,6 +467,18 @@ function hasUnloadedContent(tile) {
 
 function reachedSkippingThreshold(tileset, tile) {
   const ancestor = tile._ancestorWithContent;
+  // GW-ADD
+  let t = false;
+  if (
+    ancestor &&
+    ancestor.hasTilesetContent &&
+    ancestor.parent &&
+    ancestor.parent.contentUnloaded
+  ) {
+    t = true;
+  }
+  // GW-ADD
+  /* GW-UPDATE
   return (
     !tileset.immediatelyLoadDesiredLevelOfDetail &&
     (tile._priorityProgressiveResolutionScreenSpaceErrorLeaf ||
@@ -430,7 +487,53 @@ function reachedSkippingThreshold(tileset, tile) {
           ancestor._screenSpaceError / tileset.skipScreenSpaceErrorFactor &&
         tile._depth > ancestor._depth + tileset.skipLevels))
   );
+   */
+  return (
+    !tileset.immediatelyLoadDesiredLevelOfDetail &&
+    (tile._priorityProgressiveResolutionScreenSpaceErrorLeaf ||
+      (defined(ancestor) &&
+        ((tile._screenSpaceError <
+          ancestor._screenSpaceError / tileset.skipScreenSpaceErrorFactor &&
+          tile._depth > ancestor._depth + tileset.skipLevels) ||
+          t)))
+  );
+  // GW-UPDATE
 }
+
+// GW-ADD
+const eachFrameDeletedTileCount = 1000;
+const delayFrameCount = 1200;
+
+function destroyDescendants(tileset, root, frameState) {
+  const stack = descendantTraversal.stack;
+  stack.push(root);
+  while (stack.length > 0) {
+    const tile = stack.pop();
+    const children = tile.children;
+    const childrenLength = children.length;
+    for (let i = 0; i < childrenLength; ++i) {
+      const child = children[i];
+      const delayFrame = frameState.frameNumber - child._touchedFrame;
+      const bFarTile = delayFrame > delayFrameCount;
+      const tileCountLeftInFrame =
+        eachFrameDeletedTileCount - tileset.haveDeletedTileCountInCurFrame;
+      const diff = child._descendantsTileCount < tileCountLeftInFrame;
+      // var t = child._geometricError < tileset._maxTileGeometricErrorToDestroy;
+      const t = true; //child._depth > 12;
+      if (bFarTile && diff && t) {
+        tileset.destroySubTileset(child);
+        if (
+          tileset.haveDeletedTileCountInCurFrame > eachFrameDeletedTileCount
+        ) {
+          break;
+        }
+      } else {
+        stack.push(child);
+      }
+    }
+  }
+}
+// GW-ADD
 
 function sortChildrenByDistanceToCamera(a, b) {
   // Sort by farthest child first since this is going on a stack
@@ -453,6 +556,30 @@ function updateAndPushChildren(tileset, tile, stack, frameState) {
 
   // Sort by distance to take advantage of early Z and reduce artifacts for skipLevelOfDetail
   children.sort(sortChildrenByDistanceToCamera);
+
+  // GW-ADD
+  if (tileset.haveDeletedTileCountInCurFrame < eachFrameDeletedTileCount) {
+    const maximumMemoryUsageInBytes = 1024 * 1024 * 1024;
+    const needTrim = true;
+    if (
+      tileset.totalMemoryUsageInBytes > maximumMemoryUsageInBytes ||
+      needTrim /* && skipLevelOfDetail(tileset)*/
+    ) {
+      for (i = 0; i < length; ++i) {
+        // var diff = children[i]._descendantsTileCount < (eachFrameDeletedTileCount - tileset.haveDeletedTileCountInCurFrame);
+        const b =
+          !isVisible(children[i]) &&
+          (needTrim ||
+            tileset.totalMemoryUsageInBytes >
+              maximumMemoryUsageInBytes); /* && (tileset.totalMemoryUsageInBytes > maximumMemoryUsageInBytes)/* && (!children[i]._bVisibleByDistanceToCamera) && diff*/
+        if (b) {
+          // tileset.destroySubTileset(children[i]);
+          destroyDescendants(tileset, children[i], frameState);
+        }
+      }
+    }
+  }
+  // GW-ADD
 
   // For traditional replacement refinement only refine if all children are loaded.
   // Empty tiles are exempt since it looks better if children stream in as they are loaded to fill the empty space.

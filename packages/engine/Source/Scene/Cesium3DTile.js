@@ -17,7 +17,9 @@ import OrientedBoundingBox from "../Core/OrientedBoundingBox.js";
 import OrthographicFrustum from "../Core/OrthographicFrustum.js";
 import Rectangle from "../Core/Rectangle.js";
 import Request from "../Core/Request.js";
+/* GW-DELETE
 import RequestScheduler from "../Core/RequestScheduler.js";
+ */
 import RequestState from "../Core/RequestState.js";
 import RequestType from "../Core/RequestType.js";
 import Resource from "../Core/Resource.js";
@@ -141,8 +143,26 @@ function Cesium3DTile(tileset, baseResource, header, parent) {
    * @type {Number}
    * @readonly
    */
+  /* GW-UPDATE
   this.geometricError = header.geometricError;
   this._geometricError = header.geometricError;
+   */
+  if (
+    defined(header) &&
+    defined(header.geometricError) &&
+    typeof header.geometricError === "number" &&
+    typeof tileset._globalScreenSpaceErrorFactor === "number" &&
+    tileset._globalScreenSpaceErrorFactor > 0
+  ) {
+    this.geometricError =
+      header.geometricError * tileset._globalScreenSpaceErrorFactor;
+    this._geometricError =
+      header.geometricError * tileset._globalScreenSpaceErrorFactor;
+  } else {
+    this.geometricError = header.geometricError;
+    this._geometricError = header.geometricError;
+  }
+  // GW-UPDATE
 
   if (!defined(this._geometricError)) {
     this._geometricError = defined(parent)
@@ -211,8 +231,9 @@ function Cesium3DTile(tileset, baseResource, header, parent) {
   let hasEmptyContent = false;
   let contentState;
   let contentResource;
+  /* GW-DELETE  
   let serverKey;
-
+  */
   baseResource = Resource.createIfNeeded(baseResource);
 
   if (hasMultipleContents) {
@@ -242,9 +263,11 @@ function Cesium3DTile(tileset, baseResource, header, parent) {
       contentResource = baseResource.getDerivedResource({
         url: contentHeaderUri,
       });
+      /* GW-DELETE
       serverKey = RequestScheduler.getServerKey(
         contentResource.getUrlComponent()
       );
+       */
     }
   } else {
     content = new Empty3DTileContent(tileset, this);
@@ -258,9 +281,9 @@ function Cesium3DTile(tileset, baseResource, header, parent) {
   this._contentReadyToProcessPromise = undefined;
   this._contentReadyPromise = undefined;
   this._expiredContent = undefined;
-
+  /* GW-DELETE
   this._serverKey = serverKey;
-
+  */
   /**
    * When <code>true</code>, the tile has no content.
    *
@@ -493,6 +516,17 @@ function Cesium3DTile(tileset, baseResource, header, parent) {
   this._colorDirty = false;
 
   this._request = undefined;
+
+  // GW-ADD
+  this._bVisibleByDistanceToCamera = true;
+  this._useVisibleByDistanceToCamera = defaultValue(
+    tileset._useVisibleByDistanceToCamera,
+    false
+  );
+  this.haveUpdateTransform = false;
+  this._descendantsTileCount = 0;
+  this._haveQueryIndexedDBCache = false;
+  // GW-ADD
 }
 
 // This can be overridden for testing purposes
@@ -755,7 +789,7 @@ Object.defineProperties(Cesium3DTile.prototype, {
     },
   },
 });
-
+/* GW-DELETE
 const scratchCartesian = new Cartesian3();
 function isPriorityDeferred(tile, frameState) {
   const tileset = tile._tileset;
@@ -857,7 +891,7 @@ function isPriorityDeferred(tile, frameState) {
 
   return tileset.maximumScreenSpaceError - sseRelaxation <= sse;
 }
-
+ */
 const scratchJulianDate = new JulianDate();
 
 /**
@@ -916,7 +950,7 @@ Cesium3DTile.prototype.getScreenSpaceError = function (
 
   return error;
 };
-
+/* GW-DELETE
 function isPriorityProgressiveResolution(tileset, tile) {
   if (
     tileset.progressiveResolutionHeightFraction <= 0.0 ||
@@ -957,7 +991,10 @@ function getPriorityReverseScreenSpaceError(tileset, tile) {
     : tile._screenSpaceError;
   return tileset.root._screenSpaceError - screenSpaceError;
 }
-
+ */
+// GW-ADD
+let updateTransform = false;
+// GW-ADD
 /**
  * Update the tile's visibility.
  *
@@ -972,7 +1009,14 @@ Cesium3DTile.prototype.updateVisibility = function (frameState) {
   const parentVisibilityPlaneMask = defined(parent)
     ? parent._visibilityPlaneMask
     : CullingVolume.MASK_INDETERMINATE;
+  /* GW-UPDATE
   this.updateTransform(parentTransform);
+   */
+  if (!updateTransform || tileset._needUpdate) {
+    this.updateTransform(parentTransform);
+    updateTransform = true;
+  }
+  // GW-UPDATE
   this._distanceToCamera = this.distanceToTile(frameState);
   this._centerZDepth = this.distanceToTileCenter(frameState);
   this._screenSpaceError = this.getScreenSpaceError(frameState, false);
@@ -987,6 +1031,7 @@ Cesium3DTile.prototype.updateVisibility = function (frameState) {
   ); // Use parent's plane mask to speed up visibility test
   this._visible = this._visibilityPlaneMask !== CullingVolume.MASK_OUTSIDE;
   this._inRequestVolume = this.insideViewerRequestVolume(frameState);
+  /* GW-DELETE
   this._priorityReverseScreenSpaceError = getPriorityReverseScreenSpaceError(
     tileset,
     this
@@ -996,6 +1041,19 @@ Cesium3DTile.prototype.updateVisibility = function (frameState) {
     this
   );
   this.priorityDeferred = isPriorityDeferred(this, frameState);
+   */
+
+  // GeowayGlobe-ADD
+  this._bVisibleByDistanceToCamera =
+    this._distanceToCamera < tileset.maxTileDistanceToCamera;
+
+  const children = this.children;
+  const length = children.length;
+  this._descendantsTileCount = 1;
+  for (let i = 0; i < length; ++i) {
+    this._descendantsTileCount += children[i]._descendantsTileCount;
+  }
+  // GeowayGlobe-ADD
 };
 
 /**
@@ -1180,7 +1238,12 @@ function multipleContentFailed(tile, tileset, error) {
 function requestSingleContent(tile) {
   // it is important to clone here. The fetchArrayBuffer() below uses
   // throttling, but other uses of the resources do not.
+  /* GW-UPDATE
   const resource = tile._contentResource.clone();
+   */
+  const resource = tile._contentResource.clone();
+  tile._tileset.getResourceFromExtraServer(resource);
+  // GW-UPDATE
   const expired = tile.contentExpired;
   if (expired) {
     // Append a query parameter of the tile expiration date to prevent caching
@@ -1194,7 +1257,11 @@ function requestSingleContent(tile) {
     throttleByServer: true,
     type: RequestType.TILES3D,
     priorityFunction: createPriorityFunction(tile),
+    /* GW-UPDATE
     serverKey: tile._serverKey,
+     */
+    serverKey: tile.tileset._serverKey,
+    // GW-UPDATE
   });
 
   tile._request = request;
@@ -1361,7 +1428,10 @@ function makeContent(tile, arrayBuffer) {
 Cesium3DTile.prototype.cancelRequests = function () {
   if (this.hasMultipleContents) {
     this._content.cancelRequests();
+    /* GW-UPDATE
   } else {
+     */
+  } else if (this._request instanceof Request) {
     this._request.cancel();
   }
 };
@@ -1458,7 +1528,13 @@ Cesium3DTile.prototype.visibility = function (
   frameState,
   parentVisibilityPlaneMask
 ) {
+  /* GW-UPDATE  
   const cullingVolume = frameState.cullingVolume;
+  */
+  const cullingVolume = frameState.useIndependenceVolumeCulling3DTiles
+    ? frameState.cesium3DTilesCullingVolume
+    : frameState.cullingVolume;
+  // GW-UPDATE
   const boundingVolume = getBoundingVolume(this, frameState);
 
   const tileset = this._tileset;
@@ -2022,8 +2098,9 @@ Cesium3DTile.prototype.updatePriority = function () {
     preloadProgressiveResolutionLeftShift +
     preloadProgressiveResolutionDigitsCount;
   const foveatedDeferDigitsCount = digitsForABoolean;
+  /* GW-DELETE
   const foveatedDeferScale = Math.pow(10, foveatedDeferLeftShift);
-
+  */
   const preloadFlightLeftShift =
     foveatedDeferLeftShift + foveatedDeferDigitsCount;
   const preloadFlightScale = Math.pow(10, preloadFlightLeftShift);
@@ -2037,8 +2114,12 @@ Cesium3DTile.prototype.updatePriority = function () {
   depthDigits = preferLeaves ? 1.0 - depthDigits : depthDigits;
 
   // Map 0-1 then convert to digit. Include a distance sort when doing non-skipLOD and replacement refinement, helps things like non-skipLOD photogrammetry
+  /* GW-UPDATE
   const useDistance =
     !tileset._skipLevelOfDetail && this.refine === Cesium3DTileRefine.REPLACE;
+  */
+  const useDistance = true;
+  // GW-UPDATE
   const normalizedPreferredSorting = useDistance
     ? priorityNormalizeAndClamp(
         this._priorityHolder._distanceToCamera,
@@ -2059,7 +2140,7 @@ Cesium3DTile.prototype.updatePriority = function () {
   const preloadProgressiveResolutionDigits = this._priorityProgressiveResolution
     ? 0
     : preloadProgressiveResolutionScale;
-
+  /* GW-UPDATE
   const normalizedFoveatedFactor = priorityNormalizeAndClamp(
     this._priorityHolder._foveatedFactor,
     minimumPriority.foveatedFactor,
@@ -2072,6 +2153,10 @@ Cesium3DTile.prototype.updatePriority = function () {
   );
 
   const foveatedDeferDigits = this.priorityDeferred ? foveatedDeferScale : 0;
+
+  */
+  const foveatedDigits = 0;
+  const foveatedDeferDigits = 0;
 
   const preloadFlightDigits =
     tileset._pass === Cesium3DTilePass.PRELOAD_FLIGHT ? 0 : preloadFlightScale;

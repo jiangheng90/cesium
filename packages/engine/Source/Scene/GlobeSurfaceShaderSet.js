@@ -110,9 +110,11 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
   const onWater = options.onWater;
   const onOffset = options.onOffset;
   const onCull = options.onCull;
+  const onMaterial = options.onMaterial;
   let hasAnyWaterMask = false;
   let hasAnyOffsetMask = false;
   let hasAnyCullMask = false;
+  let hasAnyMaterialMask = false;
   for (let i = 0; i < onWater.length; i++) {
     if (onWater[i]) {
       hasAnyWaterMask = true;
@@ -130,6 +132,13 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
   for (let i = 0; i < onCull.length; i++) {
     if (onCull[i]) {
       hasAnyCullMask = true;
+      break;
+    }
+  }
+
+  for (let i = 0; i < onMaterial.length; i++) {
+    if (onMaterial[i]) {
+      hasAnyMaterialMask = true;
       break;
     }
   }
@@ -195,7 +204,10 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
 
   // GW-ADD
   const extensionFlags =
-    hasAnyWaterMask | (hasAnyOffsetMask << 1) | (hasAnyCullMask << 2);
+    hasAnyWaterMask |
+    (hasAnyOffsetMask << 1) |
+    (hasAnyCullMask << 2) |
+    (hasAnyMaterialMask << 3);
   const key = `${flags}-${extensionFlags}`;
   // GW-ADD
   let currentClippingShaderState = 0;
@@ -360,6 +372,9 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     if (hasAnyCullMask) {
       fs.defines.push("HAS_ANY_CULL_MASK");
     }
+    if (hasAnyMaterialMask) {
+      fs.defines.push("HAS_ANY_MATERIAL_MASK");
+    }
     // GW-ADD
 
     let computeDayColor =
@@ -380,7 +395,8 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
       const isWaterMask = onWater[i];
       const isOffsetMask = onOffset[i];
       const isCullMask = onCull[i];
-      if (isWaterMask || isOffsetMask || isCullMask) {
+      const isMaterialMask = onMaterial[i];
+      if (isWaterMask || isOffsetMask || isCullMask || isMaterialMask) {
         continue;
       }
       // GW-ADD
@@ -451,7 +467,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
     }
 
     if (hasAnyCullMask) {
-      let sampleOffsetColors = `
+      let sampleCullColors = `
       vec4 sampleCullColors() {
         vec4 finalCullColor =  vec4(0.0);
       `;
@@ -460,7 +476,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
         if (!isOffsetMask) {
           continue;
         }
-        sampleOffsetColors += `
+        sampleCullColors += `
           vec2 cullMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
           vec2 cullMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
           vec2 cullMaskTextureCoordinates${i} = v_textureCoordinates.xy * cullMaskScale${i} + cullMaskTranslation${i};
@@ -468,10 +484,34 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
           finalCullColor = cullColor${i};
           `;
       }
-      sampleOffsetColors += `
+      sampleCullColors += `
         return finalCullColor;
       }`;
-      fs.sources.push(sampleOffsetColors);
+      fs.sources.push(sampleCullColors);
+    }
+
+    if (hasAnyMaterialMask) {
+      let sampleMaterialColors = `
+      vec4 sampleMaterialColors() {
+        vec4 finalMaterialColor =  vec4(0.0);
+      `;
+      for (let i = 0; i < numberOfDayTextures; ++i) {
+        const isMaterialMask = onMaterial[i];
+        if (!isMaterialMask) {
+          continue;
+        }
+        sampleMaterialColors += `
+          vec2 materialMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
+          vec2 materialMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
+          vec2 materialMaskTextureCoordinates${i} = v_textureCoordinates.xy * materialMaskScale${i} + materialMaskTranslation${i};
+          vec4 materialColor${i} = texture2D(u_dayTextures[${i}], materialMaskTextureCoordinates${i});
+          finalMaterialColor = materialColor${i};
+          `;
+      }
+      sampleMaterialColors += `
+        return finalMaterialColor;
+      }`;
+      fs.sources.push(sampleMaterialColors);
     }
     // GW-ADD
 

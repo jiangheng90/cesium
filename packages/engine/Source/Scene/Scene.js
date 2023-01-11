@@ -694,6 +694,14 @@ function Scene(options) {
    */
   this.light = new SunLight();
 
+  // GW-ADD
+  this.cullingVolumeCamera = new Camera(this);
+  this._useIndependenceVolumeCulling3DTiles = defaultValue(
+    options.useIndependenceVolumeCulling3DTiles,
+    false
+  );
+  // GW-ADD
+
   // Give frameState, camera, and screen space camera controller initial state before rendering
   updateFrameNumber(this, 0.0, JulianDate.now());
   this.updateFrameState();
@@ -1859,6 +1867,22 @@ Scene.prototype.updateFrameState = function () {
     camera.directionWC,
     camera.upWC
   );
+  // GW-ADD
+  const cullingVolumeCamera = this.cullingVolumeCamera;
+  if (this._useIndependenceVolumeCulling3DTiles) {
+    camera.frustum.clone(cullingVolumeCamera.frustum);
+    cullingVolumeCamera.frustum.far = 50000;
+    frameState.useIndependenceVolumeCulling3DTiles = true;
+  }
+  frameState.cesium3DTilesCullingVolume = this
+    ._useIndependenceVolumeCulling3DTiles
+    ? cullingVolumeCamera.frustum.computeCullingVolume(
+        camera.positionWC,
+        camera.directionWC,
+        camera.upWC
+      )
+    : frameState.cullingVolume;
+  // GW-ADD
   frameState.occluder = getOccluder(this);
   frameState.minimumTerrainHeight = 0.0;
   frameState.minimumDisableDepthTestDistance = this._minimumDisableDepthTestDistance;
