@@ -1232,6 +1232,14 @@ Object.defineProperties(Viewer.prototype, {
     },
   },
 
+  // GW-ADD
+  tileServiceLayers: {
+    get: function () {
+      return this.scene.tileServiceLayers;
+    },
+  },
+  // GW-ADD
+
   /**
    * The terrain provider providing surface geometry for the globe.
    * @memberof Viewer.prototype

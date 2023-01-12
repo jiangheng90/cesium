@@ -1,3 +1,6 @@
+// GW-ADD
+import Billboard from "./Billboard.js";
+// GW-ADD
 import BoundingRectangle from "../Core/BoundingRectangle.js";
 import BoundingSphere from "../Core/BoundingSphere.js";
 import BoxGeometry from "../Core/BoxGeometry.js";
@@ -45,6 +48,9 @@ import DebugCameraPrimitive from "./DebugCameraPrimitive.js";
 import DepthPlane from "./DepthPlane.js";
 import DerivedCommand from "./DerivedCommand.js";
 import DeviceOrientationCameraController from "./DeviceOrientationCameraController.js";
+// GW-ADD
+import EllipsoidalOccluder from "../Core/EllipsoidalOccluder.js";
+// GW-ADD
 import Fog from "./Fog.js";
 import FrameState from "./FrameState.js";
 import GlobeTranslucencyState from "./GlobeTranslucencyState.js";
@@ -69,6 +75,9 @@ import SunPostProcess from "./SunPostProcess.js";
 import TweenCollection from "./TweenCollection.js";
 import View from "./View.js";
 import DebugInspector from "./DebugInspector.js";
+// GW-ADD
+import KDBush from "kdbush";
+// GW-ADD
 
 const requestRenderAfterFrame = function (scene) {
   return function () {
@@ -695,6 +704,7 @@ function Scene(options) {
   this.light = new SunLight();
 
   // GW-ADD
+  this._annotationPixelRange = defaultValue(options.annotationPixelRange, 0);
   this.cullingVolumeCamera = new Camera(this);
   this._useIndependenceVolumeCulling3DTiles = defaultValue(
     options.useIndependenceVolumeCulling3DTiles,
@@ -1096,6 +1106,18 @@ Object.defineProperties(Scene.prototype, {
       return this.globe.imageryLayers;
     },
   },
+
+  //GW-ADD
+  tileServiceLayers: {
+    get: function () {
+      if (!defined(this.globe)) {
+        return undefined;
+      }
+
+      return this.globe.tileServiceLayers;
+    },
+  },
+  //GW-ADD
 
   /**
    * The terrain provider providing surface geometry for the globe.
@@ -1621,6 +1643,17 @@ Object.defineProperties(Scene.prototype, {
       return this._globeHeight;
     },
   },
+
+  // GW-ADD
+  annotationPixelRange: {
+    get: function () {
+      return this._annotationPixelRange;
+    },
+    set: function (value) {
+      this._annotationPixelRange = value;
+    },
+  },
+  // GW-ADD
 });
 
 /**
@@ -3349,6 +3382,70 @@ function updateShadowMaps(scene) {
   }
 }
 
+// GW-ADD
+const pointBoundinRectangleScratch = new BoundingRectangle();
+const totalBoundingRectangleScratch = new BoundingRectangle();
+const neighborBoundingRectangleScratch = new BoundingRectangle();
+
+function getScreenSpacePositions(collection, points, scene, occluder) {
+  if (!defined(collection)) {
+    return;
+  }
+  collection._clusterids = [];
+  collection._clusterShowState = [];
+  const length = collection.length;
+  for (let i = 0; i < length; ++i) {
+    const item = collection.get(i);
+    item.clusterShow = false;
+
+    if (
+      !item.show ||
+      (scene.mode === SceneMode.SCENE3D &&
+        !occluder.isPointVisible(item.position))
+    ) {
+      continue;
+    }
+
+    const coord = item.computeScreenSpacePosition(scene);
+    if (!defined(coord)) {
+      continue;
+    }
+
+    points.push({
+      index: i,
+      collection: collection,
+      clustered: false,
+      coord: coord,
+    });
+  }
+}
+
+function getX(point) {
+  return point.coord.x;
+}
+
+function getY(point) {
+  return point.coord.y;
+}
+
+function expandBoundingBox(bbox, pixelRange) {
+  bbox.x -= pixelRange;
+  bbox.y -= pixelRange;
+  bbox.width += pixelRange * 2.0;
+  bbox.height += pixelRange * 2.0;
+}
+
+function getBoundingBox(item, coord, pixelRange, result) {
+  result = Billboard.getScreenSpaceBoundingBox(item, coord, result);
+  if (item._rowNum > 1) {
+    result.height *= 2.0;
+  }
+  expandBoundingBox(result, pixelRange);
+
+  return result;
+}
+// GW-ADD
+
 function updateAndRenderPrimitives(scene) {
   const frameState = scene._frameState;
 
@@ -3361,6 +3458,142 @@ function updateAndRenderPrimitives(scene) {
   if (scene._globe) {
     scene._globe.render(frameState);
   }
+
+  // GW-ADD
+  const hasSurface = scene && scene._globe && scene._globe._surface;
+  if (!hasSurface) {
+    return;
+  }
+  const surface = scene._globe._surface;
+
+  const tilesToRender = surface._tilesToRender;
+  if (!(tilesToRender instanceof Array)) {
+    return;
+  }
+
+  const tilesToRenderLength = tilesToRender.length;
+  const points = [];
+  const ellipsoid = scene.mapProjection.ellipsoid;
+  const cameraPosition = scene.camera.positionWC;
+
+  if (scene.annotationPixelRange > 0) {
+    const occluder = new EllipsoidalOccluder(ellipsoid, cameraPosition);
+
+    for (let i = 0; i < tilesToRenderLength; i++) {
+      const surfacetile = tilesToRender[i];
+      const tileDatasCollection = surfacetile.data.tileServiceDatas;
+      for (let j = 0, len2 = tileDatasCollection.length; j < len2; ++j) {
+        const tiledata = tileDatasCollection[j];
+        if (defined(tiledata.collection)) {
+          getScreenSpacePositions(tiledata.collection, points, scene, occluder);
+        }
+      }
+    }
+
+    const index = new KDBush(points, getX, getY, 64, Int32Array);
+
+    const length = points.length;
+    let bbox;
+    let neighbors;
+    let neighborLength;
+    let neighborIndex;
+    let neighborPoint;
+    let numPoints;
+
+    let collection;
+    let collectionIndex;
+    for (let i = 0; i < length; ++i) {
+      const point = points[i];
+
+      collection = point.collection;
+      collectionIndex = point.index;
+
+      const item = collection.get(collectionIndex);
+
+      const indexid = collection._clusterids.indexOf(item.id);
+      if (indexid > -1) {
+        item.clusterShow = collection._clusterShowState[indexid];
+        continue;
+      }
+      collection._clusterids.push(item.id);
+      if (point.clustered) {
+        collection._clusterShowState.push(item.clusterShow);
+        continue;
+      }
+      point.clustered = true;
+
+      bbox = getBoundingBox(
+        item,
+        point.coord,
+        scene.annotationPixelRange,
+        pointBoundinRectangleScratch
+      );
+      const totalBBox = BoundingRectangle.clone(
+        bbox,
+        totalBoundingRectangleScratch
+      );
+
+      neighbors = index.range(
+        bbox.x,
+        bbox.y,
+        bbox.x + bbox.width,
+        bbox.y + bbox.height
+      );
+      neighbors.sort();
+      neighborLength = neighbors.length;
+
+      const clusterPosition = Cartesian3.clone(item.position);
+      numPoints = 1;
+
+      for (let j = 0; j < neighborLength; ++j) {
+        neighborIndex = neighbors[j];
+        neighborPoint = points[neighborIndex];
+        if (!neighborPoint.clustered) {
+          const neighborItem = neighborPoint.collection.get(
+            neighborPoint.index
+          );
+          const neighborBBox = getBoundingBox(
+            neighborItem,
+            neighborPoint.coord,
+            scene.annotationPixelRange,
+            neighborBoundingRectangleScratch
+          );
+
+          Cartesian3.add(
+            neighborItem.position,
+            clusterPosition,
+            clusterPosition
+          );
+
+          BoundingRectangle.union(totalBBox, neighborBBox, totalBBox);
+          ++numPoints;
+        }
+      }
+
+      if (numPoints >= 2) {
+        for (let j = 0; j < neighborLength; ++j) {
+          points[neighbors[j]].clustered = true;
+        }
+      }
+
+      item.clusterShow = true;
+
+      collection._clusterShowState.push(item.clusterShow);
+    }
+  }
+
+  for (let i = 0; i < tilesToRenderLength; ++i) {
+    const surfacetile = tilesToRender[i];
+    const tileDatasCollection = surfacetile.data.tileServiceDatas;
+    const tileDatasCollectionLength = tileDatasCollection.length;
+    for (let j = 0; j < tileDatasCollectionLength; ++j) {
+      const tiledata = tileDatasCollection[j];
+      if (defined(tiledata.collection)) {
+        tiledata.collection.update(frameState);
+      }
+    }
+  }
+  // GW-ADD
 }
 
 function updateAndClearFramebuffers(scene, passState, clearColor) {

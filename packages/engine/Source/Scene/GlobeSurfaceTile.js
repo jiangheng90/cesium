@@ -41,7 +41,9 @@ function GlobeSurfaceTile() {
    * @default []
    */
   this.imagery = [];
-
+  // GW-ADD
+  this.tileServiceDatas = [];
+  // GW-ADD
   this.waterMaskTexture = undefined;
   this.waterMaskTranslationAndScale = new Cartesian4(0.0, 0.0, 1.0, 1.0);
 
@@ -213,11 +215,19 @@ GlobeSurfaceTile.prototype.freeResources = function () {
   this.mesh = undefined;
   this.fill = this.fill && this.fill.destroy();
 
+  // GW-ADD
   const imageryList = this.imagery;
   for (let i = 0, len = imageryList.length; i < len; ++i) {
     imageryList[i].freeResources();
   }
   this.imagery.length = 0;
+
+  const tiledataList = this.tileServiceDatas;
+  for (let i = 0, len = tiledataList.length; i < len; ++i) {
+    tiledataList[i].freeResources();
+  }
+  this.tileServiceDatas.length = 0;
+  // GW-ADD
 
   this.freeVertexArray();
 };
@@ -232,7 +242,10 @@ GlobeSurfaceTile.prototype.freeVertexArray = function () {
 GlobeSurfaceTile.initialize = function (
   tile,
   terrainProvider,
-  imageryLayerCollection
+  imageryLayerCollection,
+  // GW-ADD
+  tileserviceLayerCollection
+  // GW-ADD
 ) {
   let surfaceTile = tile.data;
   if (!defined(surfaceTile)) {
@@ -240,7 +253,16 @@ GlobeSurfaceTile.initialize = function (
   }
 
   if (tile.state === QuadtreeTileLoadState.START) {
+    /* GW-UPDATE
     prepareNewTile(tile, terrainProvider, imageryLayerCollection);
+     */
+    prepareNewTile(
+      tile,
+      terrainProvider,
+      imageryLayerCollection,
+      tileserviceLayerCollection
+    );
+    // GW-UPDATE
     tile.state = QuadtreeTileLoadState.LOADING;
   }
 };
@@ -250,12 +272,23 @@ GlobeSurfaceTile.processStateMachine = function (
   frameState,
   terrainProvider,
   imageryLayerCollection,
+  // GW-ADD
+  tileServicelayerCollection,
+  // GW-ADD
   quadtree,
   vertexArraysToDestroy,
   terrainOnly
 ) {
+  /* GW-UPDATE
   GlobeSurfaceTile.initialize(tile, terrainProvider, imageryLayerCollection);
-
+  */
+  GlobeSurfaceTile.initialize(
+    tile,
+    terrainProvider,
+    imageryLayerCollection,
+    tileServicelayerCollection
+  );
+  // GW-UPDATE
   const surfaceTile = tile.data;
 
   if (tile.state === QuadtreeTileLoadState.LOADING) {
@@ -264,6 +297,9 @@ GlobeSurfaceTile.processStateMachine = function (
       frameState,
       terrainProvider,
       imageryLayerCollection,
+      // GW-ADD
+      tileServicelayerCollection,
+      // GW-ADD
       quadtree,
       vertexArraysToDestroy
     );
@@ -297,8 +333,18 @@ GlobeSurfaceTile.processStateMachine = function (
     terrainProvider,
     frameState
   );
+  // GW-ADD
+  const isTileServiceDataDoneLoading = surfaceTile.processPOI(tile, frameState);
+  // GW-ADD
 
+  /* GW-UPDATE
   if (isTerrainDoneLoading && isImageryDoneLoading) {
+   */
+  if (
+    isTerrainDoneLoading &&
+    isImageryDoneLoading &&
+    isTileServiceDataDoneLoading
+  ) {
     const callbacks = tile._loadedCallbacks;
     const newCallbacks = {};
     for (const layerId in callbacks) {
@@ -386,6 +432,32 @@ GlobeSurfaceTile.prototype.processImagery = function (
 
   return isDoneLoading;
 };
+
+// GW-ADD
+GlobeSurfaceTile.prototype.processPOI = function (
+  tile,
+  frameState,
+  skipLoading
+) {
+  let isDoneLoading = true;
+  const surfaceTile = tile.data;
+
+  const tiledataCollection = surfaceTile.tileServiceDatas;
+  const tiledataCollectionLength = tiledataCollection.length;
+  for (let i = 0; i < tiledataCollectionLength; ++i) {
+    const tileData = tiledataCollection[i];
+
+    const thisTileDoneLoading = tileData.processStateMachine(
+      tile,
+      frameState,
+      skipLoading
+    );
+    isDoneLoading = isDoneLoading && thisTileDoneLoading;
+  }
+
+  return isDoneLoading;
+};
+// GW-ADD
 
 function toggleGeodeticSurfaceNormals(
   surfaceTile,
@@ -503,7 +575,16 @@ GlobeSurfaceTile.prototype.updateExaggeration = function (
   }
 };
 
+/* GW-UPDATE
 function prepareNewTile(tile, terrainProvider, imageryLayerCollection) {
+ */
+function prepareNewTile(
+  tile,
+  terrainProvider,
+  imageryLayerCollection,
+  tileserviceLayerCollection
+) {
+  // GW-UPDATE
   let available = terrainProvider.getTileDataAvailable(
     tile.x,
     tile.y,
@@ -536,6 +617,15 @@ function prepareNewTile(tile, terrainProvider, imageryLayerCollection) {
       layer._createTileImagerySkeletons(tile, terrainProvider);
     }
   }
+
+  if (defined(tileserviceLayerCollection)) {
+    for (let i = 0, len = tileserviceLayerCollection.length; i < len; ++i) {
+      const layer = tileserviceLayerCollection.get(i);
+      if (layer.show) {
+        layer.createTileSkeletons(tile);
+      }
+    }
+  }
 }
 
 function processTerrainStateMachine(
@@ -543,6 +633,9 @@ function processTerrainStateMachine(
   frameState,
   terrainProvider,
   imageryLayerCollection,
+  // GW-ADD
+  tileServiceLayerCollection,
+  // GW-ADD
   quadtree,
   vertexArraysToDestroy
 ) {
@@ -565,6 +658,9 @@ function processTerrainStateMachine(
         frameState,
         terrainProvider,
         imageryLayerCollection,
+        // GW-ADD
+        tileServiceLayerCollection,
+        // GW-ADD
         quadtree,
         vertexArraysToDestroy,
         true
@@ -660,6 +756,22 @@ function upsample(surfaceTile, tile, frameState, terrainProvider, x, y, level) {
     // Parent is not available, so we can't upsample this tile yet.
     return;
   }
+
+  // GW-ADD
+  if (!defined(sourceData._mesh)) {
+    if (parent.data.terrainState === TerrainState.RECEIVED) {
+      transform(
+        parent.data,
+        frameState,
+        terrainProvider,
+        sourceX,
+        sourceY,
+        sourceLevel
+      );
+    }
+    return;
+  }
+  // GW-ADD
 
   const terrainDataPromise = sourceData.upsample(
     terrainProvider.tilingScheme,

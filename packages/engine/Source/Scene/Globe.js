@@ -28,6 +28,9 @@ import ImageryLayerCollection from "./ImageryLayerCollection.js";
 import QuadtreePrimitive from "./QuadtreePrimitive.js";
 import SceneMode from "./SceneMode.js";
 import ShadowMode from "./ShadowMode.js";
+// GW-ADD
+import TileServiceLayerCollection from "./TileServiceLayerCollection.js";
+// GW-ADD
 
 /**
  * The globe rendered in the scene, including its terrain ({@link Globe#terrainProvider})
@@ -45,7 +48,10 @@ function Globe(ellipsoid) {
     ellipsoid: ellipsoid,
   });
   const imageryLayerCollection = new ImageryLayerCollection();
-
+  // GW-ADD
+  const tileServiceLayerCollection = new TileServiceLayerCollection();
+  this._tileServiceLayerCollection = tileServiceLayerCollection;
+  // GW-ADD
   this._ellipsoid = ellipsoid;
   this._imageryLayerCollection = imageryLayerCollection;
 
@@ -57,9 +63,14 @@ function Globe(ellipsoid) {
       terrainProvider: terrainProvider,
       imageryLayers: imageryLayerCollection,
       surfaceShaderSet: this._surfaceShaderSet,
+      // GW-ADD
+      tileServiceLayers: tileServiceLayerCollection,
+      // GW-ADD
     }),
   });
-
+  // GW-ADD
+  this._maxLevelVisited = undefined;
+  // GW-ADD
   this._terrainProvider = terrainProvider;
   this._terrainProviderChanged = new Event();
 
@@ -128,7 +139,11 @@ function Globe(ellipsoid) {
    * @type {Boolean}
    * @default true
    */
+  /* GW-UPDATE
   this.preloadAncestors = true;
+   */
+  this.preloadAncestors = false;
+  // GW-UPDATE
 
   /**
    * Gets or sets a value indicating whether the siblings of rendered tiles should be preloaded.
@@ -411,6 +426,20 @@ Object.defineProperties(Globe.prototype, {
       return this._imageryLayerCollection;
     },
   },
+
+  // GW-ADD
+  tileServiceLayers: {
+    get: function () {
+      return this._tileServiceLayerCollection;
+    },
+  },
+  maxLevelVisited: {
+    get: function () {
+      return this._maxLevelVisited;
+    },
+  },
+  // GW-ADD
+
   /**
    * Gets an event that's raised when an imagery layer is added, shown, hidden, moved, or removed.
    *
@@ -1105,6 +1134,9 @@ Globe.prototype.endFrame = function (frameState) {
 
   if (frameState.passes.render) {
     this._surface.endFrame(frameState);
+    // GW-ADD
+    this._maxLevelVisited = frameState.maxDepthVisited;
+    // GW-ADD
   }
 };
 

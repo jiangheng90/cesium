@@ -52,6 +52,10 @@ import TerrainFillMesh from "./TerrainFillMesh.js";
 import TerrainState from "./TerrainState.js";
 import TileBoundingRegion from "./TileBoundingRegion.js";
 import TileSelectionResult from "./TileSelectionResult.js";
+// GW-ADD
+import TileServiceLayer from "./TileServiceLayer.js";
+import TileServiceLayerCollection from "./TileServiceLayerCollection.js";
+// GW-ADD
 
 /**
  * Provides quadtree tiles representing the surface of the globe.  This type is intended to be used
@@ -122,6 +126,9 @@ function GlobeSurfaceTileProvider(options) {
   this._quadtree = undefined;
   this._terrainProvider = options.terrainProvider;
   this._imageryLayers = options.imageryLayers;
+  // GW-ADD
+  this._tileServiceLayers = options.tileServiceLayers;
+  // GW-ADD
   this._surfaceShaderSet = options.surfaceShaderSet;
 
   this._renderState = undefined;
@@ -139,6 +146,18 @@ function GlobeSurfaceTileProvider(options) {
     GlobeSurfaceTileProvider.prototype._onLayerRemoved,
     this
   );
+  // GW-ADD
+  if (this._tileServiceLayers instanceof TileServiceLayerCollection) {
+    this._tileServiceLayers.layerAdded.addEventListener(
+      GlobeSurfaceTileProvider.prototype._onLayerAdded,
+      this
+    );
+    this._tileServiceLayers.layerRemoved.addEventListener(
+      GlobeSurfaceTileProvider.prototype._onLayerRemoved,
+      this
+    );
+  }
+  // GW-ADD
   this._imageryLayers.layerMoved.addEventListener(
     GlobeSurfaceTileProvider.prototype._onLayerMoved,
     this
@@ -348,6 +367,11 @@ function sortTileImageryByLayerIndex(a, b) {
 GlobeSurfaceTileProvider.prototype.update = function (frameState) {
   // update collection: imagery indices, base layers, raise layer show/hide event
   this._imageryLayers._update();
+  // GW-ADD
+  if (this._tileProvider instanceof TileServiceLayerCollection) {
+    this._tileServiceLayers._update();
+  }
+  // GW-ADD
 };
 
 function updateCredits(surface, frameState) {
@@ -610,6 +634,9 @@ GlobeSurfaceTileProvider.prototype.loadTile = function (frameState, tile) {
     frameState,
     this.terrainProvider,
     this._imageryLayers,
+    // GW-ADD
+    this._tileServiceLayers,
+    // GW-ADD
     this.quadtree,
     this._vertexArraysToDestroy,
     terrainOnly
@@ -632,6 +659,9 @@ GlobeSurfaceTileProvider.prototype.loadTile = function (frameState, tile) {
         frameState,
         this.terrainProvider,
         this._imageryLayers,
+        // GW-ADD
+        this._tileServiceLayers,
+        // GW-ADD
         this.quadtree,
         this._vertexArraysToDestroy,
         terrainOnly
@@ -1440,7 +1470,11 @@ function getTileReadyCallback(tileImageriesToFree, layer, terrainProvider) {
 }
 
 GlobeSurfaceTileProvider.prototype._onLayerAdded = function (layer, index) {
+  /* GW-UPDATE  
   if (layer.show) {
+  */
+  if (layer.show && layer instanceof ImageryLayer) {
+    // GW-UPDATE
     const terrainProvider = this._terrainProvider;
 
     const that = this;
@@ -1529,6 +1563,30 @@ GlobeSurfaceTileProvider.prototype._onLayerAdded = function (layer, index) {
     this._layerOrderChanged = true;
     tileImageryUpdatedEvent.raiseEvent();
   }
+
+  // GW-ADD
+  if (layer.show && layer instanceof TileServiceLayer) {
+    const terrainProvider = this._terrainProvider;
+    const that = this;
+
+    this._quadtree.forEachLoadedTile(function (tile) {
+      if (layer.createTileSkeletons(tile, terrainProvider)) {
+        tile.state = QuadtreeTileLoadState.LOADING;
+
+        // Tiles that are not currently being rendered need to load the new layer before they're renderable.
+        // We don't mark the rendered tiles non-renderable, though, because that would make the globe disappear.
+        if (
+          tile.level !== 0 &&
+          (tile._lastSelectionResultFrame !==
+            that.quadtree._lastSelectionFrameNumber ||
+            tile._lastSelectionResult !== TileSelectionResult.RENDERED)
+        ) {
+          tile.renderable = false;
+        }
+      }
+    });
+  }
+  // GW-ADD
 };
 
 GlobeSurfaceTileProvider.prototype._onLayerRemoved = function (layer, index) {
@@ -1538,6 +1596,9 @@ GlobeSurfaceTileProvider.prototype._onLayerRemoved = function (layer, index) {
 
     let startIndex = -1;
     let numDestroyed = 0;
+    // GW-ADD
+    const tileDatasCollection = tile.data.tileServiceDatas;
+    // GW-ADD
     for (let i = 0, len = tileImageryCollection.length; i < len; ++i) {
       const tileImagery = tileImageryCollection[i];
       let imagery = tileImagery.loadingImagery;
@@ -1560,6 +1621,30 @@ GlobeSurfaceTileProvider.prototype._onLayerRemoved = function (layer, index) {
     if (startIndex !== -1) {
       tileImageryCollection.splice(startIndex, numDestroyed);
     }
+
+    // GW-ADD
+    startIndex = -1;
+    numDestroyed = 0;
+    const tileDatasCollectionLength = tileDatasCollection.length;
+    for (let i = 0; i < tileDatasCollectionLength; ++i) {
+      const tiledata = tileDatasCollection[i];
+      if (tiledata._layer === layer) {
+        if (startIndex === -1) {
+          startIndex = i;
+        }
+
+        tiledata.freeResources();
+        ++numDestroyed;
+      } else if (startIndex !== -1) {
+        // iterated past the section of TileImagerys belonging to this layer, no need to continue.
+        break;
+      }
+    }
+
+    if (startIndex !== -1) {
+      tileDatasCollection.splice(startIndex, numDestroyed);
+    }
+    // GW-ADD
   });
 
   if (defined(layer.imageryProvider)) {

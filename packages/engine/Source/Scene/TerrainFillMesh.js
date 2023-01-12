@@ -823,7 +823,10 @@ function createFillMesh(tileProvider, frameState, tile, vertexArraysToDestroy) {
   GlobeSurfaceTile.initialize(
     tile,
     tileProvider.terrainProvider,
-    tileProvider._imageryLayers
+    tileProvider._imageryLayers,
+    //GW-ADD
+    tileProvider._tileServiceLayers
+    //GW-ADD
   );
 
   const surfaceTile = tile.data;

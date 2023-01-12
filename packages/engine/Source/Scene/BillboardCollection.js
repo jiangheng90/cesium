@@ -1448,7 +1448,13 @@ function writeTextureCoordinateBoundsOrLabelTranslate(
   vafWriters,
   billboard
 ) {
+  /* GW-UPDATE
   if (billboard.heightReference === HeightReference.CLAMP_TO_GROUND) {
+     */
+  if (
+    billboard.heightReference === HeightReference.CLAMP_TO_GROUND ||
+    billboard.heightReference === HeightReference.RELATIVE_TO_GROUND
+  ) {
     const scene = billboardCollection._scene;
     const context = frameState.context;
     const globeTranslucent = frameState.globeTranslucencyState.translucent;
@@ -2065,7 +2071,11 @@ BillboardCollection.prototype.update = function (frameState) {
     ) {
       this._rsOpaque = RenderState.fromCache({
         depthTest: {
+          /* GW-UPDATE
           enabled: true,
+           */
+          enabled: false,
+          // GW-UPDATE
           func: WebGLConstants.LESS,
         },
         depthMask: true,
@@ -2087,7 +2097,11 @@ BillboardCollection.prototype.update = function (frameState) {
     ) {
       this._rsTranslucent = RenderState.fromCache({
         depthTest: {
+          /* GW-UPDATE
           enabled: true,
+           */
+          enabled: false,
+          // GW-UPDATE
           func: useTranslucentDepthMask
             ? WebGLConstants.LEQUAL
             : WebGLConstants.LESS,
@@ -2171,9 +2185,12 @@ BillboardCollection.prototype.update = function (frameState) {
     if (this._shaderDistanceDisplayCondition) {
       vs.defines.push("DISTANCE_DISPLAY_CONDITION");
     }
+    /* GW-UPDATE
     if (this._shaderDisableDepthDistance) {
       vs.defines.push("DISABLE_DEPTH_DISTANCE");
     }
+    */
+    vs.defines.push("DISABLE_DEPTH_DISTANCE");
     if (this._shaderClampToGround) {
       if (supportVSTextureReads) {
         vs.defines.push("VERTEX_DEPTH_CHECK");
