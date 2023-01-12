@@ -1,0 +1,39 @@
+on:
+  push:
+    branches:
+    - gw
+    
+jobs:
+  test:
+    name: coverage test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        node_version: ['18.x']
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/setup-node@v3.6.0
+    - name: Use Node.js ${{ matrix.node_version }}
+      uses: actions/setup-node@v3.6.0
+      with:
+        node-version: ${{ matrix.node_version }}
+        
+    - name: Setup Chrome
+      # You may pin to the exact commit or the version.
+      # uses: browser-actions/setup-chrome@4fa655aad48f56911cad16db9252399a9e592848
+      uses: browser-actions/setup-chrome@v0.0.0
+      with:
+        # The Chromium version to install and use.
+        chromium-version: stable
+    
+    - name: Setup Firefox
+      # You may pin to the exact commit or the version.
+      # uses: browser-actions/setup-firefox@be57d2b69141a920523254ad109a4008dcc73f04
+      uses: browser-actions/setup-firefox@v0.0.0
+      with:
+        # The Firefox version to install and use. Examples: 84.0, 84.0.1, latest-esr
+        firefox-version: latest
+      
+    - name: run script
+      run: |
+        ./travis/coverage.sh
