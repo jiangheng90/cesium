@@ -994,6 +994,7 @@ function Cesium3DTileset(options) {
    */
   this._supportSubdomains = false;
 
+  this._subdomains = [];
   if (options.subdomains instanceof Array && options.subdomains.length > 0) {
     this._supportSubdomains = true;
     /**
@@ -1024,7 +1025,6 @@ function Cesium3DTileset(options) {
       that._resource = resource;
 
       // GeowayGlobe-ADD
-      that._serverKey = RequestScheduler.getServerKey(url);
       // GeowayGlobe-ADD
 
       // ion resources have a credits property we can use for additional attribution.
@@ -1177,6 +1177,8 @@ function Cesium3DTileset(options) {
       that._clippingPlanesOriginMatrix = Matrix4.clone(
         that._initialClippingPlanesOriginMatrix
       );
+
+      that._serverKey = RequestScheduler.getServerKey(that._url);
 
       return that;
     });

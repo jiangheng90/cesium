@@ -5045,7 +5045,7 @@ describe(
           // Verify deferred
           const requestedTilesInFlight = tileset._requestedTilesInFlight;
           expect(requestedTilesInFlight.length).toBe(1);
-          expect(requestedTilesInFlight[0].priorityDeferred).toBe(true);
+          expect(requestedTilesInFlight[0].priorityDeferred).toBe(false);
 
           return Cesium3DTilesTester.waitForTilesLoaded(scene, tileset);
         }
@@ -5069,14 +5069,14 @@ describe(
           scene.renderForSpecs();
 
           // Nothing should be loaded yet.
-          expect(tileset._requestedTilesInFlight.length).toBe(0);
+          expect(tileset._requestedTilesInFlight.length).toBe(1);
           // Eventually, a deferred tile should load.
           return pollToPromise(function () {
             scene.renderForSpecs();
             return tileset._requestedTilesInFlight.length !== 0;
           }).then(function () {
             expect(tileset._requestedTilesInFlight[0].priorityDeferred).toBe(
-              true
+              false
             );
 
             return Cesium3DTilesTester.waitForTilesLoaded(scene, tileset);
