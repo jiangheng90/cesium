@@ -1017,18 +1017,17 @@ function Cesium3DTileset(options) {
   let resource;
   this._readyPromise = Promise.resolve(options.url)
     .then(function (url) {
+      // GW-ADD
       if (that.isDestroyed()) {
         return;
       }
+      // GW-ADD
       let basePath;
       resource = Resource.createIfNeeded(url);
       // GW-ADD
       resource = that.getResourceFromExtraServer(resource);
       // GW-ADD
       that._resource = resource;
-
-      // GeowayGlobe-ADD
-      // GeowayGlobe-ADD
 
       // ion resources have a credits property we can use for additional attribution.
       that._credits = resource.credits;

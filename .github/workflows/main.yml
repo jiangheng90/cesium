@@ -5,7 +5,7 @@ on:
     
 jobs:
   coverage:
-    name: coverage test
+    name: coverage
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -41,4 +41,54 @@ jobs:
       run: |
         npm --silent run build
         npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
+
+  release-test:
+    name: release-test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3.3.0
+      with:
+        ref: gw
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3.6.0
+      with:
+        node-version: 18.x
+        
+    - name: Setup Chrome
+      # You may pin to the exact commit or the version.
+      # uses: browser-actions/setup-chrome@4fa655aad48f56911cad16db9252399a9e592848
+      uses: browser-actions/setup-chrome@v0.0.0
+      with:
+        # The Chromium version to install and use.
+        chromium-version: latest
+    
+    - name: Setup Firefox
+      # You may pin to the exact commit or the version.
+      # uses: browser-actions/setup-firefox@be57d2b69141a920523254ad109a4008dcc73f04
+      uses: browser-actions/setup-firefox@v0.0.0
+      with:
+        # The Firefox version to install and use. Examples: 84.0, 84.0.1, latest-esr
+        firefox-version: latest
+      
+    - name: Install
+      run: npm install
+
+    - name: Test Release
+      run: |
+        npm --silent run build-release
+        npm --silent run test -- --browsers ChromeCI --failTaskOnError --webgl-stub --release --suppressPassed
+      shell: shell
+
+    - name: Verify
+      run: |
+        node -e "const Cesium = require('./');"
+        NODE_ENV=development node Specs/test.cjs
+        NODE_ENV=production node Specs/test.cjs
+        node Specs/test.mjs
+
+        node packages/engine/Specs/test.mjs
+        node packages/widgets/Specs/test.mjs
+      shell: shell
   
