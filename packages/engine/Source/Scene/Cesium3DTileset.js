@@ -53,7 +53,7 @@ import TileBoundingRegion from "./TileBoundingRegion.js";
 import TileBoundingSphere from "./TileBoundingSphere.js";
 import TileOrientedBoundingBox from "./TileOrientedBoundingBox.js";
 // GW-ADD
-import RequestScheduler from "../Core/RequestScheduler.js";
+// import RequestScheduler from "../Core/RequestScheduler.js";
 // GW-ADD
 
 /**
@@ -1038,55 +1038,56 @@ function Cesium3DTileset(options) {
 
       that._url = resource.url;
       that._basePath = basePath;
+      return Cesium3DTileset.loadJson(resource);
 
       /* GW-UPDATE      
       return Cesium3DTileset.loadJson(resource);
-      */
-      if (
-        that._isGeoway3DTileset &&
-        (options.globalScreenSpaceErrorFactor === null ||
-          options.globalScreenSpaceErrorFactor === undefined ||
-          options.globalScreenSpaceErrorFactor === "")
-      ) {
-        const configUrl = url.replace("tileset.json", "config.json");
+      // */
+      // if (
+      //   that._isGeoway3DTileset &&
+      //   (options.globalScreenSpaceErrorFactor === null ||
+      //     options.globalScreenSpaceErrorFactor === undefined ||
+      //     options.globalScreenSpaceErrorFactor === "")
+      // ) {
+      //   const configUrl = url.replace("tileset.json", "config.json");
 
-        let configResource = Resource.createIfNeeded(configUrl);
-        if (that._supportSubdomains) {
-          configResource = that.getResourceFromExtraServer(configResource);
-        }
+      //   let configResource = Resource.createIfNeeded(configUrl);
+      //   if (that._supportSubdomains) {
+      //     configResource = that.getResourceFromExtraServer(configResource);
+      //   }
 
-        const getConfigDataPromise = configResource.fetchJson();
+      //   const getConfigDataPromise = configResource.fetchJson();
 
-        return getConfigDataPromise
-          .then(function (config) {
-            if (
-              config &&
-              config.globalScreenSpaceErrorFactor !== undefined &&
-              config.globalScreenSpaceErrorFactor !== null &&
-              config.globalScreenSpaceErrorFactor !== ""
-            ) {
-              if (!isNaN(Number(config.globalScreenSpaceErrorFactor))) {
-                that._globalScreenSpaceErrorFactor = defaultValue(
-                  Number(config.globalScreenSpaceErrorFactor),
-                  1.0
-                );
-              }
+      //   return getConfigDataPromise
+      //     .then(function (config) {
+      //       if (
+      //         config &&
+      //         config.globalScreenSpaceErrorFactor !== undefined &&
+      //         config.globalScreenSpaceErrorFactor !== null &&
+      //         config.globalScreenSpaceErrorFactor !== ""
+      //       ) {
+      //         if (!isNaN(Number(config.globalScreenSpaceErrorFactor))) {
+      //           that._globalScreenSpaceErrorFactor = defaultValue(
+      //             Number(config.globalScreenSpaceErrorFactor),
+      //             1.0
+      //           );
+      //         }
 
-              const offsetHeight = Number(config.tilesetHeight);
-              if (!isNaN(offsetHeight)) {
-                that._offsetHeight = offsetHeight;
-              }
-            }
+      //         const offsetHeight = Number(config.tilesetHeight);
+      //         if (!isNaN(offsetHeight)) {
+      //           that._offsetHeight = offsetHeight;
+      //         }
+      //       }
 
-            return Cesium3DTileset.loadJson(resource);
-          })
-          .catch(function () {
-            return Cesium3DTileset.loadJson(resource);
-          });
-        // eslint-disable-next-line no-else-return
-      } else {
-        return Cesium3DTileset.loadJson(resource);
-      }
+      //       return Cesium3DTileset.loadJson(resource);
+      //     })
+      //     .catch(function () {
+      //       return Cesium3DTileset.loadJson(resource);
+      //     });
+      //   // eslint-disable-next-line no-else-return
+      // } else {
+      //   return Cesium3DTileset.loadJson(resource);
+      // }
       // GW-UPDATE
     })
     .then(function (tilesetJson) {
@@ -1178,7 +1179,7 @@ function Cesium3DTileset(options) {
         that._initialClippingPlanesOriginMatrix
       );
 
-      that._serverKey = RequestScheduler.getServerKey(that._url);
+      // that._serverKey = RequestScheduler.getServerKey(that._url);
 
       return that;
     });
