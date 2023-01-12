@@ -6,17 +6,12 @@ on:
 jobs:
   test:
     name: coverage test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        node_version: ['18.x']
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-node@v3.6.0
-    - name: Use Node.js ${{ matrix.node_version }}
+    - name: Use Node.js
       uses: actions/setup-node@v3.6.0
       with:
-        node-version: ${{ matrix.node_version }}
+        node-version: 18.x
         
     - name: Setup Chrome
       # You may pin to the exact commit or the version.
@@ -34,8 +29,10 @@ jobs:
         # The Firefox version to install and use. Examples: 84.0, 84.0.1, latest-esr
         firefox-version: latest
       
-    - name: run script
+    - name: Install
+      run: npm install
+      
+    - name: Coverage
       run: |
-        npm i
         npm run build
         npm run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
