@@ -36,4 +36,5 @@ jobs:
       
     - name: run script
       run: |
-        ./travis/coverage.sh
+        npm --silent run build
+        npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
