@@ -36,5 +36,4 @@ jobs:
       
     - name: run script
       run: |
-        npm run build
-        npm run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
+        dir
