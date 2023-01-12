@@ -1017,6 +1017,9 @@ function Cesium3DTileset(options) {
   let resource;
   this._readyPromise = Promise.resolve(options.url)
     .then(function (url) {
+      if (that.isDestroyed()) {
+        return;
+      }
       let basePath;
       resource = Resource.createIfNeeded(url);
       // GW-ADD
