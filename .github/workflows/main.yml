@@ -38,5 +38,5 @@ jobs:
       run: npm install
 
     - name: Coverage
-      run: ./.github/workflows/command/coverage.sh
+      run: ./command/coverage.sh
   
