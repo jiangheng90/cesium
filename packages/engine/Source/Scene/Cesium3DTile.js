@@ -1260,7 +1260,7 @@ function requestSingleContent(tile) {
     /* GW-UPDATE
     serverKey: tile._serverKey,
      */
-    serverKey: tile.tileset._serverKey,
+    serverKey: undefined,
     // GW-UPDATE
   });
 

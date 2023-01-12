@@ -40,5 +40,5 @@ jobs:
     - name: Coverage
       run: |
         npm --silent run build
-        npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
+        npm run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
   
