@@ -73,4 +73,5 @@ jobs:
 
         node packages/engine/Specs/test.mjs
         node packages/widgets/Specs/test.mjs
+      shell: bash
   
