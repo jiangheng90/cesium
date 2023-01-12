@@ -30,7 +30,7 @@ jobs:
         firefox-version: latest
       
     - name: Install
-      run: npm install
+      run: npm ci
       
     - name: Coverage
       run: |
