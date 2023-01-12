@@ -4,7 +4,7 @@ on:
     - gw
     
 jobs:
-  test:
+  coverage:
     name: coverage test
     runs-on: ubuntu-latest
     steps:
@@ -36,3 +36,8 @@ jobs:
       
     - name: Install
       run: npm install
+
+    - name: Coverage
+      run: |
+        npm --silent run build
+        npm --silent run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
