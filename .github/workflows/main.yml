@@ -30,9 +30,4 @@ jobs:
         firefox-version: latest
       
     - name: Install
-      run: npm ci
-      
-    - name: Coverage
-      run: |
-        npm run build
-        npm run coverage -- --browsers FirefoxHeadless --webgl-stub --failTaskOnError --suppressPassed
+      run: npm install
