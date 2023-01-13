@@ -25,7 +25,7 @@ import ShaderSource from "../Renderer/ShaderSource.js";
 import VertexArrayFacade from "../Renderer/VertexArrayFacade.js";
 import GWBillboardCollectionFS from "../Shaders/GWBillboardCollectionFS.js";
 import GWBillboardCollectionVS from "../Shaders/GWBillboardCollectionVS.js";
-import Billboard from "./Billboard.js";
+import GWBillboard from "./GWBillboard.js";
 import BlendingState from "./BlendingState.js";
 import BlendOption from "./BlendOption.js";
 import HeightReference from "./HeightReference.js";
@@ -35,26 +35,27 @@ import SDFSettings from "./SDFSettings.js";
 import TextureAtlas from "./TextureAtlas.js";
 import VerticalOrigin from "./VerticalOrigin.js";
 
-const SHOW_INDEX = Billboard.SHOW_INDEX;
-const POSITION_INDEX = Billboard.POSITION_INDEX;
-const PIXEL_OFFSET_INDEX = Billboard.PIXEL_OFFSET_INDEX;
-const EYE_OFFSET_INDEX = Billboard.EYE_OFFSET_INDEX;
-const HORIZONTAL_ORIGIN_INDEX = Billboard.HORIZONTAL_ORIGIN_INDEX;
-const VERTICAL_ORIGIN_INDEX = Billboard.VERTICAL_ORIGIN_INDEX;
-const SCALE_INDEX = Billboard.SCALE_INDEX;
-const IMAGE_INDEX_INDEX = Billboard.IMAGE_INDEX_INDEX;
-const COLOR_INDEX = Billboard.COLOR_INDEX;
-const ROTATION_INDEX = Billboard.ROTATION_INDEX;
-const ALIGNED_AXIS_INDEX = Billboard.ALIGNED_AXIS_INDEX;
-const SCALE_BY_DISTANCE_INDEX = Billboard.SCALE_BY_DISTANCE_INDEX;
-const TRANSLUCENCY_BY_DISTANCE_INDEX = Billboard.TRANSLUCENCY_BY_DISTANCE_INDEX;
+const SHOW_INDEX = GWBillboard.SHOW_INDEX;
+const POSITION_INDEX = GWBillboard.POSITION_INDEX;
+const PIXEL_OFFSET_INDEX = GWBillboard.PIXEL_OFFSET_INDEX;
+const EYE_OFFSET_INDEX = GWBillboard.EYE_OFFSET_INDEX;
+const HORIZONTAL_ORIGIN_INDEX = GWBillboard.HORIZONTAL_ORIGIN_INDEX;
+const VERTICAL_ORIGIN_INDEX = GWBillboard.VERTICAL_ORIGIN_INDEX;
+const SCALE_INDEX = GWBillboard.SCALE_INDEX;
+const IMAGE_INDEX_INDEX = GWBillboard.IMAGE_INDEX_INDEX;
+const COLOR_INDEX = GWBillboard.COLOR_INDEX;
+const ROTATION_INDEX = GWBillboard.ROTATION_INDEX;
+const ALIGNED_AXIS_INDEX = GWBillboard.ALIGNED_AXIS_INDEX;
+const SCALE_BY_DISTANCE_INDEX = GWBillboard.SCALE_BY_DISTANCE_INDEX;
+const TRANSLUCENCY_BY_DISTANCE_INDEX =
+  GWBillboard.TRANSLUCENCY_BY_DISTANCE_INDEX;
 const PIXEL_OFFSET_SCALE_BY_DISTANCE_INDEX =
-  Billboard.PIXEL_OFFSET_SCALE_BY_DISTANCE_INDEX;
-const DISTANCE_DISPLAY_CONDITION_INDEX = Billboard.DISTANCE_DISPLAY_CONDITION;
-const DISABLE_DEPTH_DISTANCE = Billboard.DISABLE_DEPTH_DISTANCE;
-const TEXTURE_COORDINATE_BOUNDS = Billboard.TEXTURE_COORDINATE_BOUNDS;
-const SDF_INDEX = Billboard.SDF_INDEX;
-const NUMBER_OF_PROPERTIES = Billboard.NUMBER_OF_PROPERTIES;
+  GWBillboard.PIXEL_OFFSET_SCALE_BY_DISTANCE_INDEX;
+const DISTANCE_DISPLAY_CONDITION_INDEX = GWBillboard.DISTANCE_DISPLAY_CONDITION;
+const DISABLE_DEPTH_DISTANCE = GWBillboard.DISABLE_DEPTH_DISTANCE;
+const TEXTURE_COORDINATE_BOUNDS = GWBillboard.TEXTURE_COORDINATE_BOUNDS;
+const SDF_INDEX = GWBillboard.SDF_INDEX;
+const NUMBER_OF_PROPERTIES = GWBillboard.NUMBER_OF_PROPERTIES;
 
 let attributeLocations;
 
@@ -472,7 +473,7 @@ function destroyBillboards(billboards) {
  * @see GWBillboardCollection#removeAll
  */
 GWBillboardCollection.prototype.add = function (options) {
-  const billboard = new Billboard(options, this);
+  const billboard = new GWBillboard(options, this);
   billboard._index = this._billboards.length;
 
   this._billboards.push(billboard);
@@ -1698,7 +1699,7 @@ function recomputeActualPositions(
   for (let i = 0; i < length; ++i) {
     const billboard = billboards[i];
     const position = billboard.position;
-    const actualPosition = Billboard._computeActualPosition(
+    const actualPosition = GWBillboard._computeActualPosition(
       billboard,
       position,
       frameState,

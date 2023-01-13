@@ -7,7 +7,7 @@ import destroyObject from "../Core/destroyObject.js";
 // GeowayGlobe-ADD
 import GeographicTilingScheme from "../Core/GeographicTilingScheme.js";
 import Resource from "../Core/Resource.js";
-import GWBillboardCollection from "./GWBillboardCollection";
+import GWBillboardCollection from "./GWBillboardCollection.js";
 import HeightReference from "./HeightReference.js";
 import createGuid from "../Core/createGuid.js";
 import Color from "../Core/Color.js";
