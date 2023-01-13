@@ -28,6 +28,9 @@ varying mat2 v_rotationMatrix;
 
 varying vec4 v_pickColor;
 varying vec4 v_color;
+// GW-ADD
+varying float v_fade;
+// GW-ADD
 #ifdef SDF
 varying vec4 v_outlineColor;
 varying float v_outlineWidth;
@@ -52,14 +55,22 @@ const float SHIFT_RIGHT3 = 1.0 / 8.0;
 const float SHIFT_RIGHT2 = 1.0 / 4.0;
 const float SHIFT_RIGHT1 = 1.0 / 2.0;
 
+/* GW-UPDATE
 vec4 addScreenSpaceOffset(vec4 positionEC, vec2 imageSize, float scale, vec2 direction, vec2 origin, vec2 translate, vec2 pixelOffset, vec3 alignedAxis, bool validAlignedAxis, float rotation, bool sizeInMeters, out mat2 rotationMatrix, out float mpp)
+ */
+vec4 addScreenSpaceOffset(vec4 positionEC, vec2 imageSize, float scale, vec2 direction, vec2 origin, vec2 translate, vec2 pixelOffset, vec3 alignedAxis, bool validAlignedAxis, float rotation, bool sizeInMeters, out mat2 rotationMatrix, out float mpp, bool sameOrigin)
+// GW-UPDATE
 {
     // Note the halfSize cannot be computed in JavaScript because it is sent via
     // compressed vertex attributes that coerce it to an integer.
     vec2 halfSize = imageSize * scale * 0.5;
     halfSize *= ((direction * 2.0) - 1.0);
 
+    /* GW-UPDATE
     vec2 originTranslate = origin * abs(halfSize);
+     */
+    vec2 originTranslate = sameOrigin ? abs(halfSize) : origin * abs(halfSize);
+    // GW-UPDATE
 
 #if defined(ROTATION) || defined(ALIGNED_AXIS)
     if (validAlignedAxis || rotation != 0.0)
@@ -67,7 +78,7 @@ vec4 addScreenSpaceOffset(vec4 positionEC, vec2 imageSize, float scale, vec2 dir
         float angle = rotation;
         if (validAlignedAxis)
         {
-            vec4 projectedAlignedAxis = czm_modelView3D * vec4(alignedAxis, 0.0);
+            vec4 projectedAlignedAxis = czm_modelViewProjection * vec4(alignedAxis, 0.0);
             angle += sign(-projectedAlignedAxis.x) * acos(sign(projectedAlignedAxis.y) * (projectedAlignedAxis.y * projectedAlignedAxis.y) /
                     (projectedAlignedAxis.x * projectedAlignedAxis.x + projectedAlignedAxis.y * projectedAlignedAxis.y));
         }
@@ -85,7 +96,13 @@ vec4 addScreenSpaceOffset(vec4 positionEC, vec2 imageSize, float scale, vec2 dir
 
     mpp = czm_metersPerPixel(positionEC);
     positionEC.xy += (originTranslate + halfSize) * czm_branchFreeTernary(sizeInMeters, 1.0, mpp);
+    /* GW-UPDATE    
     positionEC.xy += (translate + pixelOffset) * mpp;
+     */
+    if(!sameOrigin) {
+        positionEC.xy += (translate + pixelOffset) * mpp;
+    }
+    // GW-UPDATE
 
     return positionEC;
 }
@@ -311,6 +328,7 @@ void main()
     float disableDepthTestDistance = compressedAttribute3.z;
 #endif
 
+/* GW-UPDATE
 #ifdef VERTEX_DEPTH_CHECK
 if (lengthSq < disableDepthTestDistance) {
     float depthsilon = 10.0;
@@ -337,7 +355,27 @@ if (lengthSq < disableDepthTestDistance) {
 }
 #endif
 
+*/
+    float fade = 1.0;
+#ifdef VERTEX_DEPTH_CHECK
+    float depthsilon = 30.0;
+    vec2 labelTranslate = textureCoordinateBoundsOrLabelTranslate.xy;
+    vec4 pEC = addScreenSpaceOffset(positionEC, dimensions, scale, vec2(0.5), origin, labelTranslate, pixelOffset, alignedAxis, validAlignedAxis, rotation, sizeInMeters, rotationMatrix, mpp, true);
+    float globeDepth = getGlobeDepth(pEC);
+    if (globeDepth != 0.0 && pEC.z < globeDepth) {
+        float occludeDepth = globeDepth - pEC.z;
+        float maxToEye = pow(lengthSq, 0.5) / 10.0;
+        fade = (maxToEye - occludeDepth) / maxToEye;
+        fade = fade > 0.0 ? fade : 0.0;
+    }
+#endif
+    v_fade = fade;
+// GW-UPDATE
+    /* GW-UPDATE
     positionEC = addScreenSpaceOffset(positionEC, imageSize, scale, direction, origin, translate, pixelOffset, alignedAxis, validAlignedAxis, rotation, sizeInMeters, rotationMatrix, mpp);
+     */
+    positionEC = addScreenSpaceOffset(positionEC, imageSize, scale, direction, origin, translate, pixelOffset, alignedAxis, validAlignedAxis, rotation, sizeInMeters, rotationMatrix, mpp, false);
+    // GW-UPDATE
     gl_Position = czm_projection * positionEC;
     v_textureCoordinates = textureCoordinates;
 
@@ -345,6 +383,7 @@ if (lengthSq < disableDepthTestDistance) {
     czm_vertexLogDepth();
 #endif
 
+/* GW-DELETE
 #ifdef DISABLE_DEPTH_DISTANCE
     if (disableDepthTestDistance == 0.0 && czm_minimumDisableDepthTestDistance != 0.0)
     {
@@ -366,6 +405,7 @@ if (lengthSq < disableDepthTestDistance) {
         }
     }
 #endif
+*/
 
 #ifdef FRAGMENT_DEPTH_CHECK
     if (sizeInMeters) {

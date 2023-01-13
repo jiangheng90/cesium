@@ -12,6 +12,10 @@ varying vec2 v_textureCoordinates;
 varying vec4 v_pickColor;
 varying vec4 v_color;
 
+// GW-ADD
+varying float v_fade;
+// GW-ADD
+
 #ifdef SDF
 varying vec4 v_outlineColor;
 varying float v_outlineWidth;
@@ -126,6 +130,10 @@ void main()
 #else
     color = czm_gammaCorrect(color);
     color *= czm_gammaCorrect(v_color);
+
+// GeowayGlobe-ADD
+    color.a *= v_fade;
+// GeowayGlobe-ADD
 #endif
 
 // Fully transparent parts of the billboard are not pickable.

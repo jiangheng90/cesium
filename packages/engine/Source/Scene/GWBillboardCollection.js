@@ -23,8 +23,8 @@ import RenderState from "../Renderer/RenderState.js";
 import ShaderProgram from "../Renderer/ShaderProgram.js";
 import ShaderSource from "../Renderer/ShaderSource.js";
 import VertexArrayFacade from "../Renderer/VertexArrayFacade.js";
-import BillboardCollectionFS from "../Shaders/BillboardCollectionFS.js";
-import BillboardCollectionVS from "../Shaders/BillboardCollectionVS.js";
+import GWBillboardCollectionFS from "../Shaders/GWBillboardCollectionFS.js";
+import GWBillboardCollectionVS from "../Shaders/GWBillboardCollectionVS.js";
 import Billboard from "./Billboard.js";
 import BlendingState from "./BlendingState.js";
 import BlendOption from "./BlendOption.js";
@@ -98,8 +98,8 @@ const attributeLocationsInstanced = {
  * Example billboards
  * </div>
  * <br /><br />
- * Billboards are added and removed from the collection using {@link BillboardCollection#add}
- * and {@link BillboardCollection#remove}.  Billboards in a collection automatically share textures
+ * Billboards are added and removed from the collection using {@link GWBillboardCollection#add}
+ * and {@link GWBillboardCollection#remove}.  Billboards in a collection automatically share textures
  * for images with the same identifier.
  *
  * @alias BillboardCollection
@@ -120,8 +120,8 @@ const attributeLocationsInstanced = {
  * change should be in one collection; billboards that change every frame should be in another
  * collection; and so on.
  *
- * @see BillboardCollection#add
- * @see BillboardCollection#remove
+ * @see GWBillboardCollection#add
+ * @see GWBillboardCollection#remove
  * @see Billboard
  * @see LabelCollection
  *
@@ -139,7 +139,7 @@ const attributeLocationsInstanced = {
  *   image : 'url/to/another/image'
  * });
  */
-function BillboardCollection(options) {
+function GWBillboardCollection(options) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
 
   this._scene = options.scene;
@@ -342,10 +342,10 @@ function BillboardCollection(options) {
   }
 }
 
-Object.defineProperties(BillboardCollection.prototype, {
+Object.defineProperties(GWBillboardCollection.prototype, {
   /**
    * Returns the number of billboards in this collection.  This is commonly used with
-   * {@link BillboardCollection#get} to iterate over all the billboards
+   * {@link GWBillboardCollection#get} to iterate over all the billboards
    * in the collection.
    * @memberof BillboardCollection.prototype
    * @type {Number}
@@ -468,10 +468,10 @@ function destroyBillboards(billboards) {
  *   position : Cesium.Cartesian3.fromDegrees(longitude, latitude, height)
  * });
  *
- * @see BillboardCollection#remove
- * @see BillboardCollection#removeAll
+ * @see GWBillboardCollection#remove
+ * @see GWBillboardCollection#removeAll
  */
-BillboardCollection.prototype.add = function (options) {
+GWBillboardCollection.prototype.add = function (options) {
   const billboard = new Billboard(options, this);
   billboard._index = this._billboards.length;
 
@@ -500,11 +500,11 @@ BillboardCollection.prototype.add = function (options) {
  * const b = billboards.add(...);
  * billboards.remove(b);  // Returns true
  *
- * @see BillboardCollection#add
- * @see BillboardCollection#removeAll
+ * @see GWBillboardCollection#add
+ * @see GWBillboardCollection#removeAll
  * @see Billboard#show
  */
-BillboardCollection.prototype.remove = function (billboard) {
+GWBillboardCollection.prototype.remove = function (billboard) {
   if (this.contains(billboard)) {
     this._billboards[billboard._index] = undefined; // Removed later
     this._billboardsRemoved = true;
@@ -530,10 +530,10 @@ BillboardCollection.prototype.remove = function (billboard) {
  * billboards.add(...);
  * billboards.removeAll();
  *
- * @see BillboardCollection#add
- * @see BillboardCollection#remove
+ * @see GWBillboardCollection#add
+ * @see GWBillboardCollection#remove
  */
-BillboardCollection.prototype.removeAll = function () {
+GWBillboardCollection.prototype.removeAll = function () {
   destroyBillboards(this._billboards);
   this._billboards = [];
   this._billboardsToUpdate = [];
@@ -562,7 +562,7 @@ function removeBillboards(billboardCollection) {
   }
 }
 
-BillboardCollection.prototype._updateBillboard = function (
+GWBillboardCollection.prototype._updateBillboard = function (
   billboard,
   propertyChanged
 ) {
@@ -579,9 +579,9 @@ BillboardCollection.prototype._updateBillboard = function (
  * @param {Billboard} [billboard] The billboard to check for.
  * @returns {Boolean} true if this collection contains the billboard, false otherwise.
  *
- * @see BillboardCollection#get
+ * @see GWBillboardCollection#get
  */
-BillboardCollection.prototype.contains = function (billboard) {
+GWBillboardCollection.prototype.contains = function (billboard) {
   return defined(billboard) && billboard._billboardCollection === this;
 };
 
@@ -589,14 +589,14 @@ BillboardCollection.prototype.contains = function (billboard) {
  * Returns the billboard in the collection at the specified index.  Indices are zero-based
  * and increase as billboards are added.  Removing a billboard shifts all billboards after
  * it to the left, changing their indices.  This function is commonly used with
- * {@link BillboardCollection#length} to iterate over all the billboards
+ * {@link GWBillboardCollection#length} to iterate over all the billboards
  * in the collection.
  *
  * @param {Number} index The zero-based index of the billboard.
  * @returns {Billboard} The billboard at the specified index.
  *
  * @performance Expected constant time.  If billboards were removed from the collection and
- * {@link BillboardCollection#update} was not called, an implicit <code>O(n)</code>
+ * {@link GWBillboardCollection#update} was not called, an implicit <code>O(n)</code>
  * operation is performed.
  *
  * @exception {DeveloperError} This object was destroyed, i.e., destroy() was called.
@@ -610,9 +610,9 @@ BillboardCollection.prototype.contains = function (billboard) {
  *   b.show = !b.show;
  * }
  *
- * @see BillboardCollection#length
+ * @see GWBillboardCollection#length
  */
-BillboardCollection.prototype.get = function (index) {
+GWBillboardCollection.prototype.get = function (index) {
   //>>includeStart('debug', pragmas.debug);
   Check.typeOf.number("index", index);
   //>>includeEnd('debug');
@@ -693,7 +693,7 @@ function getVertexBufferInstanced(context) {
   return vertexBuffer;
 }
 
-BillboardCollection.prototype.computeNewBuffersUsage = function () {
+GWBillboardCollection.prototype.computeNewBuffersUsage = function () {
   const buffersUsage = this._buffersUsage;
   let usageChanged = false;
 
@@ -1448,7 +1448,13 @@ function writeTextureCoordinateBoundsOrLabelTranslate(
   vafWriters,
   billboard
 ) {
+  /* GW-UPDATE
   if (billboard.heightReference === HeightReference.CLAMP_TO_GROUND) {
+     */
+  if (
+    billboard.heightReference === HeightReference.CLAMP_TO_GROUND ||
+    billboard.heightReference === HeightReference.RELATIVE_TO_GROUND
+  ) {
     const scene = billboardCollection._scene;
     const context = frameState.context;
     const globeTranslucent = frameState.globeTranslucencyState.translucent;
@@ -1818,7 +1824,7 @@ const scratchWriterArray = [];
  *
  * @exception {RuntimeError} image with id must be in the atlas.
  */
-BillboardCollection.prototype.update = function (frameState) {
+GWBillboardCollection.prototype.update = function (frameState) {
   removeBillboards(this);
 
   if (!this.show) {
@@ -2065,7 +2071,11 @@ BillboardCollection.prototype.update = function (frameState) {
     ) {
       this._rsOpaque = RenderState.fromCache({
         depthTest: {
+          /* GW-UPDATE
           enabled: true,
+           */
+          enabled: false,
+          // GW-UPDATE
           func: WebGLConstants.LESS,
         },
         depthMask: true,
@@ -2087,7 +2097,11 @@ BillboardCollection.prototype.update = function (frameState) {
     ) {
       this._rsTranslucent = RenderState.fromCache({
         depthTest: {
+          /* GW-UPDATE
           enabled: true,
+           */
+          enabled: false,
+          // GW-UPDATE
           func: useTranslucentDepthMask
             ? WebGLConstants.LEQUAL
             : WebGLConstants.LESS,
@@ -2129,8 +2143,8 @@ BillboardCollection.prototype.update = function (frameState) {
     this._shaderClampToGround !== this._compiledShaderClampToGround ||
     this._sdf !== this._compiledSDF
   ) {
-    vsSource = BillboardCollectionVS;
-    fsSource = BillboardCollectionFS;
+    vsSource = GWBillboardCollectionVS;
+    fsSource = GWBillboardCollectionFS;
 
     vertDefines = [];
     if (defined(this._batchTable)) {
@@ -2171,9 +2185,12 @@ BillboardCollection.prototype.update = function (frameState) {
     if (this._shaderDistanceDisplayCondition) {
       vs.defines.push("DISTANCE_DISPLAY_CONDITION");
     }
+    /* GW-UPDATE
     if (this._shaderDisableDepthDistance) {
       vs.defines.push("DISABLE_DEPTH_DISTANCE");
     }
+    */
+    vs.defines.push("DISABLE_DEPTH_DISTANCE");
     if (this._shaderClampToGround) {
       if (supportVSTextureReads) {
         vs.defines.push("VERTEX_DEPTH_CHECK");
@@ -2375,9 +2392,9 @@ BillboardCollection.prototype.update = function (frameState) {
  *
  * @returns {Boolean} <code>true</code> if this object was destroyed; otherwise, <code>false</code>.
  *
- * @see BillboardCollection#destroy
+ * @see GWBillboardCollection#destroy
  */
-BillboardCollection.prototype.isDestroyed = function () {
+GWBillboardCollection.prototype.isDestroyed = function () {
   return false;
 };
 
@@ -2395,9 +2412,9 @@ BillboardCollection.prototype.isDestroyed = function () {
  * @example
  * billboards = billboards && billboards.destroy();
  *
- * @see BillboardCollection#isDestroyed
+ * @see GWBillboardCollection#isDestroyed
  */
-BillboardCollection.prototype.destroy = function () {
+GWBillboardCollection.prototype.destroy = function () {
   if (defined(this._removeCallbackFunc)) {
     this._removeCallbackFunc();
     this._removeCallbackFunc = undefined;
@@ -2414,4 +2431,4 @@ BillboardCollection.prototype.destroy = function () {
 
   return destroyObject(this);
 };
-export default BillboardCollection;
+export default GWBillboardCollection;

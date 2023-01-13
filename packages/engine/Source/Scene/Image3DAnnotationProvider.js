@@ -1,5 +1,4 @@
 import BoundingRectangle from "../Core/BoundingRectangle.js";
-import Cartesian2 from "../Core/Cartesian2.js";
 import Cartesian3 from "../Core/Cartesian3.js";
 import defaultValue from "../Core/defaultValue.js";
 import defined from "../Core/defined.js";
@@ -8,9 +7,30 @@ import destroyObject from "../Core/destroyObject.js";
 // GeowayGlobe-ADD
 import GeographicTilingScheme from "../Core/GeographicTilingScheme.js";
 import Resource from "../Core/Resource.js";
-import BillboardCollection from "./BillboardCollection.js";
+import GWBillboardCollection from "./GWBillboardCollection";
 import HeightReference from "./HeightReference.js";
 import createGuid from "../Core/createGuid.js";
+import Color from "../Core/Color.js";
+
+function animate(onUpdate, onStop, duration) {
+  const start = Date.now();
+  let animateId;
+  duration = defaultValue(duration, 500);
+  function loop() {
+    const progress = Date.now() - start;
+    onUpdate(progress / duration, animateId);
+    if (progress <= duration + 1) {
+      animateId = requestAnimationFrame(loop);
+    } else {
+      cancelAnimationFrame(animateId);
+      if (onStop instanceof Function) {
+        onStop();
+      }
+    }
+  }
+
+  animateId = requestAnimationFrame(loop);
+}
 
 function Image3DAnnotationProvider(options) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
@@ -196,7 +216,7 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
   if (defined(data.content)) {
     const len = data.content.length;
     if (len > 0) {
-      tile.collection = new BillboardCollection({ scene: that._scene });
+      tile.collection = new GWBillboardCollection({ scene: that._scene });
     }
     tile.collection.show = that._show;
 
@@ -233,6 +253,7 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
         scale: 1 / that._ratio,
         position: Cartesian3.fromDegrees(lon, lat),
         image: data.image,
+        color: new Color(1, 1, 1, 0),
         imageSubRegion: new BoundingRectangle(
           x1,
           data.height - y1 - height,
@@ -243,38 +264,48 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
         rowNum: rowNum,
         show: that._show,
       });
-
-      if (data.content[i]["rowNums"] > 1) {
-        const x1_line2 = data.content[i]["offset"][4];
-        const y1_line2 = data.content[i]["offset"][5];
-        const x2_line2 = data.content[i]["offset"][6];
-        const y2_line2 = data.content[i]["offset"][7];
-
-        const width_line2 = x2_line2 - x1_line2;
-        const height_line2 = y2_line2 - y1_line2;
-        id = data.content[i]["id"];
-        if (!defined(id)) {
-          id = that._index;
-          that._index++;
+      animate(function (progress, animateId) {
+        if (!defined(tile.collection)) {
+          cancelAnimationFrame(animateId);
+          return;
         }
-        tile.collection.add({
-          //tile._collection
-          id: id,
-          scale: 1 / that._ratio,
-          pixelOffset: new Cartesian2(0, height_line2 / 2 + 8),
-          position: Cartesian3.fromDegrees(lon, lat),
-          image: data.image,
-          //image:"../../Sandcastle/images/facility.gif",
-          imageSubRegion: new BoundingRectangle(
-            x1_line2,
-            data.height - y1_line2 - height_line2,
-            width_line2,
-            height_line2
-          ),
-          heightReference: heightReference,
-          show: that._show,
-        });
-      }
+        for (let i = 0; i < tile.collection._billboards.length; i++) {
+          const entity = tile.collection._billboards[i];
+          entity.color = new Color(1, 1, 1, progress <= 1 ? progress : 1);
+        }
+      });
+
+      // if (data.content[i]["rowNums"] > 1) {
+      //   const x1_line2 = data.content[i]["offset"][4];
+      //   const y1_line2 = data.content[i]["offset"][5];
+      //   const x2_line2 = data.content[i]["offset"][6];
+      //   const y2_line2 = data.content[i]["offset"][7];
+
+      //   const width_line2 = x2_line2 - x1_line2;
+      //   const height_line2 = y2_line2 - y1_line2;
+      //   id = data.content[i]["id"];
+      //   if (!defined(id)) {
+      //     id = that._index;
+      //     that._index++;
+      //   }
+      //   tile.collection.add({
+      //     //tile._collection
+      //     id: id,
+      //     scale: 1 / that._ratio,
+      //     pixelOffset: new Cartesian2(0, height_line2 / 2 + 8),
+      //     position: Cartesian3.fromDegrees(lon, lat),
+      //     image: data.image,
+      //     color: new Color(1, 1, 1, 0),
+      //     imageSubRegion: new BoundingRectangle(
+      //       x1_line2,
+      //       data.height - y1_line2 - height_line2,
+      //       width_line2,
+      //       height_line2
+      //     ),
+      //     heightReference: heightReference,
+      //     show: that._show,
+      //   });
+      // }
     }
   }
 
