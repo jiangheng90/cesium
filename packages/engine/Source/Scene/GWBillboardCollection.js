@@ -102,7 +102,7 @@ const attributeLocationsInstanced = {
  * and {@link GWBillboardCollection#remove}.  Billboards in a collection automatically share textures
  * for images with the same identifier.
  *
- * @alias BillboardCollection
+ * @alias GWBillboardCollection
  * @constructor
  *
  * @param {Object} [options] Object with the following properties:
