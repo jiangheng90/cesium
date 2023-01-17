@@ -11,26 +11,8 @@ import GWBillboardCollection from "./GWBillboardCollection.js";
 import HeightReference from "./HeightReference.js";
 import createGuid from "../Core/createGuid.js";
 import Color from "../Core/Color.js";
-
-function animate(onUpdate, onStop, duration) {
-  const start = Date.now();
-  let animateId;
-  duration = defaultValue(duration, 500);
-  function loop() {
-    const progress = Date.now() - start;
-    onUpdate(progress / duration, animateId);
-    if (progress <= duration + 1) {
-      animateId = requestAnimationFrame(loop);
-    } else {
-      cancelAnimationFrame(animateId);
-      if (onStop instanceof Function) {
-        onStop();
-      }
-    }
-  }
-
-  animateId = requestAnimationFrame(loop);
-}
+import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
+import DeveloperError from "../Core/DeveloperError.js";
 
 function Image3DAnnotationProvider(options) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
@@ -68,6 +50,12 @@ function Image3DAnnotationProvider(options) {
   this._clamped2TerrainLevel = defaultValue(options.clamped2TerrainLevel, 10);
 
   this._collectionMap = {};
+
+  this._priority = defaultValue(options.priority, -1);
+
+  if (this._priority < -1) {
+    throw new DeveloperError("priority must above zero");
+  }
 }
 
 Object.defineProperties(Image3DAnnotationProvider.prototype, {
@@ -169,6 +157,15 @@ Object.defineProperties(Image3DAnnotationProvider.prototype, {
       }
     },
   },
+
+  priority: {
+    get: function () {
+      return this._priority;
+    },
+    set: function (value) {
+      this._priority = value;
+    },
+  },
 });
 
 function requestData(provider, col, row, level, request) {
@@ -216,9 +213,13 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
   if (defined(data.content)) {
     const len = data.content.length;
     if (len > 0) {
-      tile.collection = new GWBillboardCollection({ scene: that._scene });
+      tile.collection = new GWBillboardCollection({
+        scene: that._scene,
+        provider: this,
+      });
     }
     tile.collection.show = that._show;
+    tile.collection.justAdd = true;
 
     const collection_index = `${tile._x}-${tile._y}-${tile._level}`;
     this._collectionMap[collection_index] = tile.collection;
@@ -236,11 +237,6 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
 
       const heightReference = HeightReference.CLAMP_TO_GROUND;
 
-      let rowNum = 1;
-      if (data.content[i]["rowNums"] > 1) {
-        rowNum = 2;
-      }
-
       let id = data.content[i]["id"];
       if (!defined(id)) {
         id = that._index;
@@ -250,30 +246,34 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
       tile.collection.add({
         //tile._collection
         id: id,
-        scale: 1 / that._ratio,
+        // scale: 1 / that._ratio,
         position: Cartesian3.fromDegrees(lon, lat),
         image: data.image,
-        color: new Color(1, 1, 1, 0),
+        color: new Color(1, 1, 1, 1),
+        alpha: 0,
         imageSubRegion: new BoundingRectangle(
           x1,
           data.height - y1 - height,
           width,
           height
         ),
+        width: width / that._ratio * window.devicePixelRatio,
+        height: height / that._ratio * window.devicePixelRatio,
         heightReference: heightReference,
-        rowNum: rowNum,
         show: that._show,
+        animation: GWBillboardAnimationType.HIDE,
       });
-      animate(function (progress, animateId) {
-        if (!defined(tile.collection)) {
-          cancelAnimationFrame(animateId);
-          return;
-        }
-        for (let i = 0; i < tile.collection._billboards.length; i++) {
-          const entity = tile.collection._billboards[i];
-          entity.color = new Color(1, 1, 1, progress <= 1 ? progress : 1);
-        }
-      });
+
+      // animate(function (progress, animateId) {
+      //   if (!defined(tile.collection)) {
+      //     cancelAnimationFrame(animateId);
+      //     return;
+      //   }
+      //   for (let i = 0; i < tile.collection._billboards.length; i++) {
+      //     const entity = tile.collection._billboards[i];
+      //     entity.color = new Color(1, 1, 1, progress <= 1 ? progress : 1);
+      //   }
+      // });
 
       // if (data.content[i]["rowNums"] > 1) {
       //   const x1_line2 = data.content[i]["offset"][4];

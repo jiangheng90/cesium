@@ -33,6 +33,9 @@
         "use strict";
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
+          // imageryProvider: new Cesium.TileMapServiceImageryProvider({
+          //   url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          // }),
           terrainProvider: new Cesium.TiledTerrainProvider({
             connections: [
               {
@@ -64,18 +67,26 @@
             ],
           }),
         });
+        viewer.extend(Cesium.viewerCesiumInspectorMixin);
 
+        if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
+          viewer.resolutionScale = window.devicePixelRatio;
+        }
+        // const layer = viewer.imageryLayers.get(0);
+        // layer.minificationFilter = Cesium.TextureMinificationFilter.NEAREST;
+        // layer.magnificationFilter = Cesium.TextureMagnificationFilter.NEAREST;
         viewer.tileServiceLayers.addTileServiceProvider(
           new Cesium.Image3DAnnotationProvider({
             viewer: viewer,
             url:
               "http://atlas.geoway.com.cn:31080/mapserver/label/osm_china/getImgData?styleId=zhuji&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
 
-            minimumLevel: 2,
+            minimumLevel: 0,
             maximumLevel: 21,
             tileWidth: 512,
             tileHeight: 512,
             ratio: 2,
+            priority: 2,
             tileMatrixLabels: [
               "2",
               "3",
@@ -100,46 +111,43 @@
           })
         );
 
-        if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
-          this.resolutionScale = window.devicePixelRatio;
-        }
+        // viewer.tileServiceLayers.addTileServiceProvider(
+        //   new Cesium.Image3DAnnotationProvider({
+        //     viewer: viewer,
+        //     url:
+        //       "http://intenal.geoway-atlas.com:31280/mapserver/label/juhe/getImgData?styleId=xzq&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
 
-        viewer.tileServiceLayers.addTileServiceProvider(
-          new Cesium.Image3DAnnotationProvider({
-            viewer: viewer,
-            url:
-              "http://intenal.geoway-atlas.com:31280/mapserver/label/juhe/getImgData?styleId=xzq&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
+        //     minimumLevel: 0,
+        //     maximumLevel: 6,
+        //     tileWidth: 512,
+        //     tileHeight: 512,
+        //     ratio: 2,
+        //     priority: 3,
+        //     tileMatrixLabels: [
+        //       "2",
+        //       "3",
+        //       "4",
+        //       "5",
+        //       "6",
+        //       "7",
+        //       "8",
+        //       "9",
+        //       "10",
+        //       "11",
+        //       "12",
+        //       "13",
+        //       "14",
+        //       "15",
+        //       "16",
+        //       "17",
+        //       "18",
+        //       "19",
+        //       "20",
+        //     ],
+        //   })
+        // );
 
-            minimumLevel: 6,
-            maximumLevel: 20,
-            tileWidth: 512,
-            tileHeight: 512,
-            ratio: 2,
-            tileMatrixLabels: [
-              "2",
-              "3",
-              "4",
-              "5",
-              "6",
-              "7",
-              "8",
-              "9",
-              "10",
-              "11",
-              "12",
-              "13",
-              "14",
-              "15",
-              "16",
-              "17",
-              "18",
-              "19",
-              "20",
-            ],
-          })
-        );
-
-        viewer.scene.annotationPixelRange = 5;
+        // viewer.scene.annotationPixelRange = 5;
 
         viewer.camera.flyTo({
           destination: Cesium.Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2),

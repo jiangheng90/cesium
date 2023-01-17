@@ -559,23 +559,13 @@ function updateAndPushChildren(tileset, tile, stack, frameState) {
 
   // GW-ADD
   if (tileset.haveDeletedTileCountInCurFrame < eachFrameDeletedTileCount) {
-    const maximumMemoryUsageInBytes = 1024 * 1024 * 1024;
-    const needTrim = true;
-    if (
-      tileset.totalMemoryUsageInBytes > maximumMemoryUsageInBytes ||
-      needTrim /* && skipLevelOfDetail(tileset)*/
-    ) {
-      for (i = 0; i < length; ++i) {
-        // var diff = children[i]._descendantsTileCount < (eachFrameDeletedTileCount - tileset.haveDeletedTileCountInCurFrame);
-        const b =
-          !isVisible(children[i]) &&
-          (needTrim ||
-            tileset.totalMemoryUsageInBytes >
-              maximumMemoryUsageInBytes); /* && (tileset.totalMemoryUsageInBytes > maximumMemoryUsageInBytes)/* && (!children[i]._bVisibleByDistanceToCamera) && diff*/
-        if (b) {
-          // tileset.destroySubTileset(children[i]);
-          destroyDescendants(tileset, children[i], frameState);
-        }
+    for (i = 0; i < length; ++i) {
+      // var diff = children[i]._descendantsTileCount < (eachFrameDeletedTileCount - tileset.haveDeletedTileCountInCurFrame);
+      const b = !isVisible(children[i]);
+
+      if (b) {
+        // tileset.destroySubTileset(children[i]);
+        destroyDescendants(tileset, children[i], frameState);
       }
     }
   }

@@ -34,6 +34,7 @@ import SceneMode from "./SceneMode.js";
 import SDFSettings from "./SDFSettings.js";
 import TextureAtlas from "./TextureAtlas.js";
 import VerticalOrigin from "./VerticalOrigin.js";
+import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
 
 const SHOW_INDEX = GWBillboard.SHOW_INDEX;
 const POSITION_INDEX = GWBillboard.POSITION_INDEX;
@@ -203,6 +204,8 @@ function GWBillboardCollection(options) {
 
   this._colorCommands = [];
 
+  this._provider = options.provider;
+
   /**
    * Determines if billboards in this collection will be shown.
    *
@@ -355,6 +358,12 @@ Object.defineProperties(GWBillboardCollection.prototype, {
     get: function () {
       removeBillboards(this);
       return this._billboards.length;
+    },
+  },
+
+  priority: {
+    get: function () {
+      return this._provider ? this._provider.priority : -1;
     },
   },
 
@@ -1835,6 +1844,25 @@ GWBillboardCollection.prototype.update = function (frameState) {
   let billboards = this._billboards;
   let billboardsLength = billboards.length;
 
+  // GW-ADD
+  for (let i = 0; i < billboardsLength; i++) {
+    const billboard = billboards[i];
+    switch (billboard.animation) {
+      case GWBillboardAnimationType.SHOW: {
+        let alpha = billboard.alpha;
+        alpha += 0.05;
+        billboard.alpha = CesiumMath.clamp(alpha, 0, 1);
+        break;
+      }
+      case GWBillboardAnimationType.HIDE: {
+        let alpha = billboard.alpha;
+        alpha -= 0.05;
+        billboard.alpha = CesiumMath.clamp(alpha, 0, 1);
+      }
+    }
+  }
+  // GW-ADD
+
   const context = frameState.context;
   this._instanced = context.instancedArrays;
   attributeLocations = this._instanced
@@ -2317,6 +2345,10 @@ GWBillboardCollection.prototype.update = function (frameState) {
     this._compiledShaderDisableDepthDistance = this._shaderDisableDepthDistance;
     this._compiledShaderClampToGround = this._shaderClampToGround;
     this._compiledSDF = this._sdf;
+  }
+  if (this.justAdd) {
+    this.justAdd = undefined;
+    return;
   }
 
   const commandList = frameState.commandList;

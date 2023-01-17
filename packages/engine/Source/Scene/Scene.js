@@ -77,6 +77,10 @@ import View from "./View.js";
 import DebugInspector from "./DebugInspector.js";
 // GW-ADD
 import KDBush from "kdbush";
+import BoundingRectangleCollisionChecker from "./BoundingRectangleCollisionChecker.js";
+import Cartesian2 from "../Core/Cartesian2.js";
+import GWBillboard from "./GWBillboard.js";
+import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
 // GW-ADD
 
 const requestRenderAfterFrame = function (scene) {
@@ -709,6 +713,10 @@ function Scene(options) {
   this._useIndependenceVolumeCulling3DTiles = defaultValue(
     options.useIndependenceVolumeCulling3DTiles,
     false
+  );
+  this._enableCollisionDetection = defaultValue(
+    options.enableCollisionDetection,
+    true
   );
   // GW-ADD
 
@@ -3444,22 +3452,8 @@ function getBoundingBox(item, coord, pixelRange, result) {
 
   return result;
 }
-// GW-ADD
 
-function updateAndRenderPrimitives(scene) {
-  const frameState = scene._frameState;
-
-  scene._groundPrimitives.update(frameState);
-  scene._primitives.update(frameState);
-
-  updateDebugFrustumPlanes(scene);
-  updateShadowMaps(scene);
-
-  if (scene._globe) {
-    scene._globe.render(frameState);
-  }
-
-  // GW-ADD
+function calculateCluster(scene) {
   const hasSurface = scene && scene._globe && scene._globe._surface;
   if (!hasSurface) {
     return;
@@ -3470,7 +3464,6 @@ function updateAndRenderPrimitives(scene) {
   if (!(tilesToRender instanceof Array)) {
     return;
   }
-
   const tilesToRenderLength = tilesToRender.length;
   const points = [];
   const ellipsoid = scene.mapProjection.ellipsoid;
@@ -3485,6 +3478,10 @@ function updateAndRenderPrimitives(scene) {
       for (let j = 0, len2 = tileDatasCollection.length; j < len2; ++j) {
         const tiledata = tileDatasCollection[j];
         if (defined(tiledata.collection)) {
+          for (let j = 0; j < tiledata.collection.length; j++) {
+            const billboard = tiledata.collection.get(j);
+            billboard.animation = GWBillboardAnimationType.SHOW;
+          }
           getScreenSpacePositions(tiledata.collection, points, scene, occluder);
         }
       }
@@ -3581,10 +3578,128 @@ function updateAndRenderPrimitives(scene) {
       collection._clusterShowState.push(item.clusterShow);
     }
   }
+}
 
-  for (let i = 0; i < tilesToRenderLength; ++i) {
+function priorityHighToLow(a, b) {
+  return b.priority - a.priority;
+}
+
+function billboardFrontToBack(a, b, position) {
+  // When distances are equal equal favor sorting b before a. This gives render priority to commands later in the list.
+  return (
+    Cartesian3.distance(a.position, position) -
+    Cartesian3.distance(b.position, position) +
+    CesiumMath.EPSILON12
+  );
+}
+
+const serviceTileDataList = [];
+const priorityDataList = [];
+const boundingRectangleCollisionChecker = new BoundingRectangleCollisionChecker();
+const scratchScreenPosition = new Cartesian2();
+const scratchBoundingRectangle = new BoundingRectangle();
+
+function calculateCollision(scene) {
+  serviceTileDataList.length = 0;
+  priorityDataList.length = 0;
+  boundingRectangleCollisionChecker.clear();
+  const hasSurface = scene && scene._globe && scene._globe._surface;
+  if (!hasSurface) {
+    return;
+  }
+  const surface = scene._globe._surface;
+
+  const tilesToRender = surface._tilesToRender;
+  if (!(tilesToRender instanceof Array)) {
+    return;
+  }
+  const tilesToRenderLength = tilesToRender.length;
+  for (let i = 0; i < tilesToRenderLength; i++) {
     const surfacetile = tilesToRender[i];
     const tileDatasCollection = surfacetile.data.tileServiceDatas;
+    for (let j = 0; j < tileDatasCollection.length; ++j) {
+      const collection = tileDatasCollection[j].collection;
+
+      if (collection) {
+        if (collection.alreadyHide) {
+          delete collection.alreadyHide;
+          continue;
+        }
+        serviceTileDataList.push(collection);
+      }
+    }
+  }
+  mergeSort(serviceTileDataList, priorityHighToLow);
+  let prePriority = -1;
+  for (let i = 0; i < serviceTileDataList.length; i++) {
+    const collection = serviceTileDataList[i];
+    const priority = collection.priority;
+    if (prePriority !== priority) {
+      prePriority = priority;
+      priorityDataList.push([]);
+    }
+    for (let j = 0; j < collection.length; j++) {
+      const billboard = collection.get(j);
+      if (billboard.justAdd) {
+        delete billboard.justAdd;
+        continue;
+      }
+      priorityDataList[priorityDataList.length - 1].push(billboard);
+    }
+  }
+  for (let i = 0; i < priorityDataList.length; i++) {
+    const billboards = priorityDataList[i];
+    mergeSort(billboards, billboardFrontToBack, scene.camera.positionWC);
+  }
+  for (let i = 0; i < priorityDataList.length; i++) {
+    const billboards = priorityDataList[i];
+    for (let j = 0; j < billboards.length; j++) {
+      const billboard = billboards[j];
+      billboard.computeScreenSpacePosition(scene, scratchScreenPosition);
+      GWBillboard.getScreenSpaceBoundingBox(
+        billboard,
+        scratchScreenPosition,
+        scratchBoundingRectangle
+      );
+      const collides = boundingRectangleCollisionChecker.collides(
+        scratchBoundingRectangle
+      );
+
+      billboard.animation = collides
+        ? GWBillboardAnimationType.HIDE
+        : GWBillboardAnimationType.SHOW;
+
+      if (!defined(billboard.guid)) {
+        billboard.guid = createGuid();
+      }
+      if (!collides) {
+        boundingRectangleCollisionChecker.insert(
+          billboard.guid,
+          scratchBoundingRectangle
+        );
+      }
+    }
+  }
+}
+
+const visibleTileIds = [];
+function renderServiceTile(scene) {
+  const frameState = scene._frameState;
+  const hasSurface = scene && scene._globe && scene._globe._surface;
+  if (!hasSurface) {
+    return;
+  }
+  const surface = scene._globe._surface;
+  const tilesToRender = surface._tilesToRender;
+  if (!(tilesToRender instanceof Array)) {
+    return;
+  }
+  const tilesToRenderLength = tilesToRender.length;
+  for (let i = 0; i < tilesToRenderLength; ++i) {
+    const tile = tilesToRender[i];
+    const tileId = `${tile._x}-${tile._y}-${tile._level}`;
+    visibleTileIds.push(tileId);
+    const tileDatasCollection = tile.data.tileServiceDatas;
     const tileDatasCollectionLength = tileDatasCollection.length;
     for (let j = 0; j < tileDatasCollectionLength; ++j) {
       const tiledata = tileDatasCollection[j];
@@ -3592,6 +3707,29 @@ function updateAndRenderPrimitives(scene) {
         tiledata.collection.update(frameState);
       }
     }
+  }
+}
+// GW-ADD
+
+function updateAndRenderPrimitives(scene) {
+  const frameState = scene._frameState;
+
+  scene._groundPrimitives.update(frameState);
+  scene._primitives.update(frameState);
+
+  updateDebugFrustumPlanes(scene);
+  updateShadowMaps(scene);
+
+  if (scene._globe) {
+    scene._globe.render(frameState);
+  }
+
+  // GW-ADD
+  renderServiceTile(scene);
+  if (scene._enableCollisionDetection) {
+    calculateCollision(scene);
+  } else {
+    calculateCluster(scene);
   }
   // GW-ADD
 }

@@ -13,11 +13,14 @@ import DistanceDisplayCondition from "../Core/DistanceDisplayCondition.js";
 import Matrix4 from "../Core/Matrix4.js";
 import NearFarScalar from "../Core/NearFarScalar.js";
 import Resource from "../Core/Resource.js";
+import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
 import HeightReference from "./HeightReference.js";
 import HorizontalOrigin from "./HorizontalOrigin.js";
 import SceneMode from "./SceneMode.js";
 import SceneTransforms from "./SceneTransforms.js";
 import VerticalOrigin from "./VerticalOrigin.js";
+
+const compositeColor = new Color();
 
 /**
  * <div class="notice">
@@ -144,6 +147,12 @@ function GWBillboard(options, billboardCollection) {
   );
   this._scale = defaultValue(options.scale, 1.0);
   this._color = Color.clone(defaultValue(options.color, Color.WHITE));
+  this._baseColor = Color.clone(defaultValue(options.color, Color.WHITE));
+  this._alpha = defaultValue(options.alpha, 1);
+  this._color = Color.clone(this._baseColor, new Color());
+  this._color.alpha *= this._alpha;
+  this.justAdd = true;
+
   this._rotation = defaultValue(options.rotation, 0.0);
   this._alignedAxis = Cartesian3.clone(
     defaultValue(options.alignedAxis, Cartesian3.ZERO)
@@ -177,6 +186,11 @@ function GWBillboard(options, billboardCollection) {
   this._labelDimensions = undefined;
   this._labelHorizontalOrigin = undefined;
   this._labelTranslate = undefined;
+  this._animation = defaultValue(
+    options.animation,
+    GWBillboardAnimationType.NONE
+  );
+  this._guid = createGuid();
 
   const image = options.image;
   let imageId = options.imageId;
@@ -660,11 +674,35 @@ Object.defineProperties(GWBillboard.prototype, {
       Check.typeOf.object("value", value);
       //>>includeEnd('debug');
 
+      Color.clone(value, compositeColor);
+      compositeColor.alpha *= this._alpha;
+
       const color = this._color;
-      if (!Color.equals(color, value)) {
-        Color.clone(value, color);
+      if (!Color.equals(color, compositeColor)) {
+        Color.clone(compositeColor, color);
+        Color.clone(value, this._baseColor);
         makeDirty(this, COLOR_INDEX);
       }
+    },
+  },
+
+  alpha: {
+    get: function () {
+      return this._alpha;
+    },
+    set: function (value) {
+      //>>includeStart('debug', pragmas.debug);
+      Check.typeOf.number("value", value);
+      //>>includeEnd('debug');
+
+      if (value === this._alpha) {
+        return;
+      }
+      this._alpha = value;
+      const color = this._color;
+      Color.clone(this._baseColor, color);
+      color.alpha *= this._alpha;
+      makeDirty(this, COLOR_INDEX);
     },
   },
 
@@ -872,6 +910,20 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
+   * The outline width of this Billboard in pixels.  Effective only for SDF billboards like Label glyphs.
+   * @memberof Billboard.prototype
+   * @type {Number}
+   */
+  animation: {
+    get: function () {
+      return this._animation;
+    },
+    set: function (value) {
+      this._animation = value;
+    },
+  },
+
+  /**
    * The primitive to return when picking this billboard.
    * @memberof Billboard.prototype
    * @private
@@ -1035,6 +1087,12 @@ Object.defineProperties(GWBillboard.prototype, {
         this._outlineWidth = value;
         makeDirty(this, SDF_INDEX);
       }
+    },
+  },
+
+  guid: {
+    get: function () {
+      return this._guid;
     },
   },
 });
