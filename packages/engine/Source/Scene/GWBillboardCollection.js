@@ -367,6 +367,21 @@ Object.defineProperties(GWBillboardCollection.prototype, {
     },
   },
 
+  animation: {
+    set: function (value) {
+      if (
+        this.length === 0 ||
+        this.get(0).animation === GWBillboardAnimationType.SHOW
+      ) {
+        return;
+      }
+      for (let i = 0; i < this.length; i++) {
+        const billboard = this.get(i);
+        billboard.animation = value;
+      }
+    },
+  },
+
   /**
    * Gets or sets the textureAtlas.
    * @memberof BillboardCollection.prototype
@@ -1858,6 +1873,7 @@ GWBillboardCollection.prototype.update = function (frameState) {
         let alpha = billboard.alpha;
         alpha -= 0.05;
         billboard.alpha = CesiumMath.clamp(alpha, 0, 1);
+        break;
       }
     }
   }
@@ -2414,6 +2430,17 @@ GWBillboardCollection.prototype.update = function (frameState) {
 
       commandList.push(this.debugCommand);
     }
+  }
+};
+
+GWBillboardCollection.prototype.resetHidden = function (frameState) {
+  if (!defined(this.alreadyHide)) {
+    for (let j = 0; j < this.length; j++) {
+      const billboard = this.get(j);
+      billboard.resetHidden();
+    }
+    this.update(frameState);
+    this.alreadyHide = true;
   }
 };
 

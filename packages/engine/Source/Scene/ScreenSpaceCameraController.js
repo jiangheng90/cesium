@@ -246,7 +246,7 @@ function ScreenSpaceCameraController(scene) {
   this.enableCollisionDetection = true;
 
   // GW-ADD
-  this.enableCameraLimit = true;
+  this.enableCameraLimit = false;
   this.limitAngle = 110;
   // GW-ADD
 

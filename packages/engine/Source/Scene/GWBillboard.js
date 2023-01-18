@@ -190,6 +190,7 @@ function GWBillboard(options, billboardCollection) {
     options.animation,
     GWBillboardAnimationType.NONE
   );
+  this._hiddenFrame = defaultValue(options.hiddenFrame, 1);
   this._guid = createGuid();
 
   const image = options.image;
@@ -257,6 +258,13 @@ function makeDirty(billboard, propertyChanged) {
     billboardCollection._updateBillboard(billboard, propertyChanged);
     billboard._dirty = true;
   }
+}
+
+function justHidden(pre, cur) {
+  return (
+    pre === GWBillboardAnimationType.SHOW &&
+    cur === GWBillboardAnimationType.HIDE
+  );
 }
 
 Object.defineProperties(GWBillboard.prototype, {
@@ -910,7 +918,6 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * The outline width of this Billboard in pixels.  Effective only for SDF billboards like Label glyphs.
    * @memberof Billboard.prototype
    * @type {Number}
    */
@@ -919,7 +926,32 @@ Object.defineProperties(GWBillboard.prototype, {
       return this._animation;
     },
     set: function (value) {
+      if (justHidden(this._animation, value)) {
+        this._hiddenFrame = 0;
+      }
       this._animation = value;
+    },
+  },
+
+  hiddenFrame: {
+    get: function () {
+      return this._hiddenFrame;
+    },
+    set: function (value) {
+      this._hiddenFrame = value;
+    },
+  },
+
+  readyForCollision: {
+    get: function () {
+      switch (this._animation) {
+        case GWBillboardAnimationType.SHOW:
+          return true;
+        case GWBillboardAnimationType.HIDE:
+          return this._hiddenFrame === 0;
+        default:
+          return false;
+      }
     },
   },
 
@@ -1599,6 +1631,12 @@ GWBillboard.prototype._destroy = function () {
   this.image = undefined;
   this._pickId = this._pickId && this._pickId.destroy();
   this._billboardCollection = undefined;
+};
+
+GWBillboard.prototype.resetHidden = function () {
+  this.alpha = 0;
+  this._animation = GWBillboardAnimationType.HIDE;
+  this._hiddenFrame = 1;
 };
 
 /**

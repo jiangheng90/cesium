@@ -28,8 +28,6 @@ function TileData(layer, x, y, level, rectangle) {
     const parentLevel = level - 1;
     this._parent = this._layer.getTileFromCache(parentX, parentY, parentLevel);
   }
-
-  this._entityidList = [];
 }
 
 TileData.prototype.addReference = function () {
@@ -40,11 +38,7 @@ TileData.prototype.processStateMachine = function (tile, frameState) {
   if (this._state === TileState.START) {
     this._layer.requestTileData(this);
   } else if (this._state === TileState.LOADING && defined(this._data)) {
-    this._entityidList = this._layer.tileDataProvider.parseTileData(
-      this,
-      frameState
-    );
-    // this.parseTileData(this._data);
+    this._layer.tileDataProvider.parseTileData(this, frameState);
     this._state = TileState.READY;
     return true;
   } else if (this._state === TileState.READY) {
@@ -52,33 +46,6 @@ TileData.prototype.processStateMachine = function (tile, frameState) {
   }
   return false;
 };
-
-// TileData.prototype.parseTileData = function(data) {
-//     if (defined(data['POI']) && defined(data['POI']['features'])) {
-//         var features = data['POI']['features'];
-//         var len = features.length;
-//         if (len > 0) {
-//             for (var i = 0; i < len; ++i) {
-//                 var lonIndex = Number(features[i][2][0]);
-//                 var latIndex = Number(features[i][2][1]);
-//
-//                 var lon = CesiumMath.toDegrees(this._rectangle.west + this._rectangle.width / this._layer.tileDataProvider.tileWidth * lonIndex);
-//                 var lat = CesiumMath.toDegrees(this._rectangle.north - this._rectangle.width / this._layer.tileDataProvider.tileHeight * latIndex);
-//
-//                 this._entities.push({
-//                     position : Cartesian3.fromDegrees(lon, lat),
-//                     label : {
-//                         text : defaultValue(features[i][1][2], ''),
-//                         distanceDisplayCondition:new DistanceDisplayCondition(this._near,this._far),
-//                         font : '15px 华文宋体',
-//                         style:LabelStyle.FILL_AND_OUTLINE,
-//                         outlineWidth:2
-//                     }
-//                 });
-//             }
-//         }
-//     }
-// };
 
 TileData.prototype.freeResources = function (frameState) {
   --this._referenceCount;
@@ -88,18 +55,12 @@ TileData.prototype.freeResources = function (frameState) {
       this._parent.freeResources(frameState);
     }
     this._layer.removeTileFromCache(this);
-    this._layer.tileDataProvider.freeResources(this);
-    this._entityidList = [];
+    // this._layer.tileDataProvider.freeResources(this);
+    if (this.collection) {
+      this.collection.destroy();
+    }
     destroyObject(this);
   }
 };
-
-// TileData.prototype.addDrawCommandForTile = function(frameState) {
-//     // this._layer.tileDataProvider.addTileData(this._entities);
-// };
-
-// TileData.prototype.update = function() {
-//     this._layer.tileDataProvider.setTileDataVisibel(this);
-// };
 
 export default TileData;

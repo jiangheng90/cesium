@@ -146,6 +146,14 @@ function GlobeSurfaceTileProvider(options) {
     GlobeSurfaceTileProvider.prototype._onLayerRemoved,
     this
   );
+  this._imageryLayers.layerMoved.addEventListener(
+    GlobeSurfaceTileProvider.prototype._onLayerMoved,
+    this
+  );
+  this._imageryLayers.layerShownOrHidden.addEventListener(
+    GlobeSurfaceTileProvider.prototype._onLayerShownOrHidden,
+    this
+  );
   // GW-ADD
   if (this._tileServiceLayers instanceof TileServiceLayerCollection) {
     this._tileServiceLayers.layerAdded.addEventListener(
@@ -156,16 +164,12 @@ function GlobeSurfaceTileProvider(options) {
       GlobeSurfaceTileProvider.prototype._onLayerRemoved,
       this
     );
+    this._tileServiceLayers.layerShownOrHidden.addEventListener(
+      GlobeSurfaceTileProvider.prototype._onLayerShownOrHidden,
+      this
+    );
   }
   // GW-ADD
-  this._imageryLayers.layerMoved.addEventListener(
-    GlobeSurfaceTileProvider.prototype._onLayerMoved,
-    this
-  );
-  this._imageryLayers.layerShownOrHidden.addEventListener(
-    GlobeSurfaceTileProvider.prototype._onLayerShownOrHidden,
-    this
-  );
   this._imageryLayersUpdatedEvent = new Event();
 
   this._layerOrderChanged = false;
@@ -368,7 +372,7 @@ GlobeSurfaceTileProvider.prototype.update = function (frameState) {
   // update collection: imagery indices, base layers, raise layer show/hide event
   this._imageryLayers._update();
   // GW-ADD
-  if (this._tileProvider instanceof TileServiceLayerCollection) {
+  if (this._tileServiceLayers instanceof TileServiceLayerCollection) {
     this._tileServiceLayers._update();
   }
   // GW-ADD

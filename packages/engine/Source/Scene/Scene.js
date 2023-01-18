@@ -3469,6 +3469,17 @@ function calculateCluster(scene) {
   const ellipsoid = scene.mapProjection.ellipsoid;
   const cameraPosition = scene.camera.positionWC;
 
+  for (let i = 0; i < tilesToRenderLength; i++) {
+    const surfacetile = tilesToRender[i];
+    const tileDatasCollection = surfacetile.data.tileServiceDatas;
+    for (let j = 0, len2 = tileDatasCollection.length; j < len2; ++j) {
+      const tiledata = tileDatasCollection[j];
+      if (defined(tiledata.collection)) {
+        tiledata.collection.animation = GWBillboardAnimationType.SHOW;
+      }
+    }
+  }
+
   if (scene.annotationPixelRange > 0) {
     const occluder = new EllipsoidalOccluder(ellipsoid, cameraPosition);
 
@@ -3478,10 +3489,6 @@ function calculateCluster(scene) {
       for (let j = 0, len2 = tileDatasCollection.length; j < len2; ++j) {
         const tiledata = tileDatasCollection[j];
         if (defined(tiledata.collection)) {
-          for (let j = 0; j < tiledata.collection.length; j++) {
-            const billboard = tiledata.collection.get(j);
-            billboard.animation = GWBillboardAnimationType.SHOW;
-          }
           getScreenSpacePositions(tiledata.collection, points, scene, occluder);
         }
       }
@@ -3574,7 +3581,9 @@ function calculateCluster(scene) {
       }
 
       item.clusterShow = true;
-
+      item.animation = item.clusterShow
+        ? GWBillboardAnimationType.SHOW
+        : GWBillboardAnimationType.HIDE;
       collection._clusterShowState.push(item.clusterShow);
     }
   }
@@ -3640,11 +3649,11 @@ function calculateCollision(scene) {
     }
     for (let j = 0; j < collection.length; j++) {
       const billboard = collection.get(j);
-      if (billboard.justAdd) {
-        delete billboard.justAdd;
-        continue;
+      if (billboard.readyForCollision) {
+        priorityDataList[priorityDataList.length - 1].push(billboard);
+      } else {
+        billboard.hiddenFrame--;
       }
-      priorityDataList[priorityDataList.length - 1].push(billboard);
     }
   }
   for (let i = 0; i < priorityDataList.length; i++) {
@@ -3664,7 +3673,6 @@ function calculateCollision(scene) {
       const collides = boundingRectangleCollisionChecker.collides(
         scratchBoundingRectangle
       );
-
       billboard.animation = collides
         ? GWBillboardAnimationType.HIDE
         : GWBillboardAnimationType.SHOW;

@@ -1,3 +1,4 @@
+import defaultValue from "../Core/defaultValue.js";
 import defined from "../Core/defined.js";
 import destroyObject from "../Core/destroyObject.js";
 import Rectangle from "../Core/Rectangle.js";
@@ -14,11 +15,12 @@ import TileState from "./TileState.js";
  * @constructor
  *
  */
-function TileServiceLayer(tileDataProvider) {
+function TileServiceLayer(tileDataProvider, options) {
   this._tileDataProvider = tileDataProvider;
+  options = defaultValue(options, defaultValue.EMPTY_OBJECT);
   this._id = tileDataProvider ? tileDataProvider.id : undefined;
-
-  this.show = true;
+  this.show = defaultValue(options.show, true);
+  this._show = true;
 
   this._minimumLevel = this._tileDataProvider.minimumLevel;
   this._maximumLevel = this._tileDataProvider.maximumLevel;
@@ -300,24 +302,12 @@ TileServiceLayer.prototype.requestTileData = function (tiledata) {
   doRequest();
 };
 
-TileServiceLayer.prototype.setVisible = function (visible) {
-  if (defined(this._tileDataProvider)) {
-    this._tileDataProvider.setVisible(visible);
-  }
-  this.show = visible;
+TileServiceLayer.prototype.isDestroyed = function () {
+  return false;
 };
 
 TileServiceLayer.prototype.destroy = function () {
-  if (this._tileDataProvider) {
-    if (
-      !(this._tileDataProvider.constructor.name === "Image3DAnnotationProvider")
-    ) {
-      if (this._tileDataProvider && this._tileDataProvider.destroy) {
-        this._tileDataProvider.destroy();
-      }
-    }
-    return destroyObject(this);
-  }
+  return destroyObject(this);
 };
 
 export default TileServiceLayer;

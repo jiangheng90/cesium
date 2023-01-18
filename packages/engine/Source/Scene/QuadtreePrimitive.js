@@ -12,7 +12,7 @@ import OrthographicOffCenterFrustum from "../Core/OrthographicOffCenterFrustum.j
 import Ray from "../Core/Ray.js";
 import Rectangle from "../Core/Rectangle.js";
 import Visibility from "../Core/Visibility.js";
-import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
+import GWBillboardCollection from "./GWBillboardCollection.js";
 import QuadtreeOccluders from "./QuadtreeOccluders.js";
 import QuadtreeTile from "./QuadtreeTile.js";
 import QuadtreeTileLoadState from "./QuadtreeTileLoadState.js";
@@ -1197,23 +1197,17 @@ function visitIfVisible(
       traversalDetails
     );
   }
+  // GW-ADD
   const tileDatasCollections = tile.data.tileServiceDatas;
   if (tileDatasCollections.length > 0) {
     for (let i = 0; i < tileDatasCollections.length; i++) {
       const collection = tileDatasCollections[i].collection;
-      if (collection) {
-        if (!defined(collection.alreadyHide)) {
-          for (let j = 0; j < collection.length; j++) {
-            const billboard = collection.get(j);
-            billboard.alpha = 0;
-            billboard.animation = GWBillboardAnimationType.HIDE;
-          }
-          collection.update(frameState);
-          collection.alreadyHide = true;
-        }
+      if (collection instanceof GWBillboardCollection) {
+        collection.resetHidden(frameState);
       }
     }
   }
+  // GW-ADD
 
   ++primitive._debug.tilesCulled;
   primitive._tileReplacementQueue.markTileRendered(tile);
