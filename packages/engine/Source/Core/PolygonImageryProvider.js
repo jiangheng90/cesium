@@ -559,6 +559,34 @@ function resetColor(canvas, colorInBytes) {
   context.putImageData(imageData, 0, 0);
 }
 
+/**
+ * @param {PolygonImageryProvider} provider
+ * @param {Rectangle} tileRectangle
+ */
+function makeCanvas(provider, tileRectangle) {
+  const canvas = document.createElement("canvas");
+  canvas.width = provider._imageWidth;
+  canvas.height = provider._imageHeight;
+  const context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = false;
+  const cssColor = provider._color.toCssColorString();
+  context.fillStyle = cssColor;
+  context.beginPath();
+  drawPolygonHierarchies(
+    context,
+    provider._hierarchies,
+    tileRectangle,
+    provider._imageWidth,
+    provider._imageHeight,
+    true
+  );
+  context.fill();
+  if (MaskType.isOffsetMask(provider._maskType)) {
+    resetColor(canvas, provider._colorInBytes);
+  }
+  return canvas;
+}
+
 const scratchIntersectionRectangle = new Rectangle();
 /**
  * Requests the image for a given tile.  This function should
@@ -577,34 +605,17 @@ PolygonImageryProvider.prototype.requestImage = function (
   request
 ) {
   const tileRectangle = this._tilingScheme.tileXYToRectangle(x, y, level);
-  if (
-    Rectangle.intersection(
-      tileRectangle,
-      this._boundingRectangle,
-      scratchIntersectionRectangle
-    )
-  ) {
-    const canvas = document.createElement("canvas");
-    canvas.width = this._imageWidth;
-    canvas.height = this._imageHeight;
-    const context = canvas.getContext("2d");
-    context.imageSmoothingEnabled = false;
-    const cssColor = this._color.toCssColorString();
-    context.fillStyle = cssColor;
-    context.beginPath();
-    drawPolygonHierarchies(
-      context,
-      this._hierarchies,
-      tileRectangle,
-      this._imageWidth,
-      this._imageHeight,
-      true
-    );
-    context.fill();
-    if (MaskType.isOffsetMask(this._maskType)) {
-      resetColor(canvas, this._colorInBytes);
-    }
-    return Promise.resolve(canvas);
+
+  if (MaskType.isCullMask(this._maskType)) {
+    return Promise.resolve(makeCanvas(this, tileRectangle));
+  }
+  const intersected = Rectangle.intersection(
+    tileRectangle,
+    this._boundingRectangle,
+    scratchIntersectionRectangle
+  );
+  if (intersected) {
+    return Promise.resolve(makeCanvas(this, tileRectangle));
   }
 };
 

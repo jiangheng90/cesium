@@ -37,7 +37,9 @@
           useIndependenceVolumeCulling3DTiles: true,
         });
         viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
-
+        if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
+          viewer.resolutionScale = window.devicePixelRatio;
+        }
         const tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset({
             url:

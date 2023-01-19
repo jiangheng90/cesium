@@ -143,42 +143,56 @@
           setLayerVisible(checked);
         });
 
-        viewer.tileServiceLayers.addTileServiceProvider(
-          new Cesium.Image3DAnnotationProvider({
-            viewer: viewer,
-            url:
-              "http://intenal.geoway-atlas.com:31280/mapserver/label/juhe/getImgData?styleId=xzq&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
+        Sandcastle.addToggleButton("remove-all/reste", false, function (
+          checked
+        ) {
+          if (checked) {
+            viewer.tileServiceLayers.removeAll();
+          } else {
+            addAnotherLayer();
+          }
+        });
 
-            minimumLevel: 0,
-            maximumLevel: 16,
-            tileWidth: 512,
-            tileHeight: 512,
-            ratio: 2,
-            priority: 1,
-            scale: 0.8,
-            tileMatrixLabels: [
-              "2",
-              "3",
-              "4",
-              "5",
-              "6",
-              "7",
-              "8",
-              "9",
-              "10",
-              "11",
-              "12",
-              "13",
-              "14",
-              "15",
-              "16",
-              "17",
-              "18",
-              "19",
-              "20",
-            ],
-          })
-        );
+        function addAnotherLayer() {
+          viewer.tileServiceLayers.addTileServiceProvider(
+            new Cesium.Image3DAnnotationProvider({
+              viewer: viewer,
+              url:
+                "http://intenal.geoway-atlas.com:31280/mapserver/label/juhe/getImgData?styleId=xzq&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
+
+              minimumLevel: 0,
+              maximumLevel: 16,
+              tileWidth: 512,
+              tileHeight: 512,
+              ratio: 2,
+              priority: 1,
+              scale: 0.8,
+              tileMatrixLabels: [
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17",
+                "18",
+                "19",
+                "20",
+              ],
+            })
+          );
+        }
+
+        addAnotherLayer();
         viewer.camera.flyTo({
           destination: Cesium.Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2),
           duration: 0,
