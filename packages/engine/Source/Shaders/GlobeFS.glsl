@@ -397,7 +397,7 @@ void main()
     vec2 waterMaskTextureCoordinates = v_textureCoordinates.xy * waterMaskScale + waterMaskTranslation;
     waterMaskTextureCoordinates.y = 1.0 - waterMaskTextureCoordinates.y;
     waterMaskColor = vec4(0.3, 0.45, 0.6, 1.0);
-    mask = texture2D(u_waterMask, waterMaskTextureCoordinates).r;
+    mask = texture(u_waterMask, waterMaskTextureCoordinates).r;
 #endif
 
 #ifdef HAS_ANY_WATER_MASK
