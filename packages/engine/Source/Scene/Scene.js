@@ -3692,6 +3692,7 @@ function calculateCollision(scene) {
 
 const visibleTileIds = [];
 function renderServiceTile(scene) {
+  visibleTileIds.length = 0;
   const frameState = scene._frameState;
   const hasSurface = scene && scene._globe && scene._globe._surface;
   if (!hasSurface) {

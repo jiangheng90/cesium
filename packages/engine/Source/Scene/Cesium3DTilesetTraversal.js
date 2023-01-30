@@ -501,8 +501,8 @@ function reachedSkippingThreshold(tileset, tile) {
 }
 
 // GW-ADD
-const eachFrameDeletedTileCount = Infinity;
-const delayFrameCount = 120;
+const eachFrameDeletedTileCount = 1000;
+const delayFrameCount = 1200;
 
 function destroyDescendants(tileset, root, frameState) {
   const stack = descendantTraversal.stack;
