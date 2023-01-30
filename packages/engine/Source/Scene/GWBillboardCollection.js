@@ -1823,7 +1823,7 @@ function createDebugCommand(billboardCollection, context) {
     "varying vec2 v_textureCoordinates; \n" +
     "void main() \n" +
     "{ \n" +
-    "    gl_FragColor = texture2D(billboard_texture, v_textureCoordinates); \n" +
+    "    gl_FragColor = texture(billboard_texture, v_textureCoordinates); \n" +
     "} \n";
 
   const drawCommand = context.createViewportQuadCommand(fs, {

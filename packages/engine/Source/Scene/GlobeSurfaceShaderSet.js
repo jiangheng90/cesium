@@ -455,7 +455,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
           vec2 waterMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
           vec2 waterMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
           vec2 waterMaskTextureCoordinates${i} = v_textureCoordinates.xy * waterMaskScale${i} + waterMaskTranslation${i};
-          vec4 waterColor${i} = texture2D(u_dayTextures[${i}], waterMaskTextureCoordinates${i});
+          vec4 waterColor${i} = texture(u_dayTextures[${i}], waterMaskTextureCoordinates${i});
           waterColor${i}.a *= ${applyAlpha ? `u_dayTextureAlpha[${i}]` : "1.0"};
           finalSeaColor = waterColor${i};
           `;
@@ -480,7 +480,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
           vec2 cullMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
           vec2 cullMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
           vec2 cullMaskTextureCoordinates${i} = v_textureCoordinates.xy * cullMaskScale${i} + cullMaskTranslation${i};
-          vec4 cullColor${i} = texture2D(u_dayTextures[${i}], cullMaskTextureCoordinates${i});
+          vec4 cullColor${i} = texture(u_dayTextures[${i}], cullMaskTextureCoordinates${i});
           finalCullColor = cullColor${i};
           `;
       }
@@ -504,7 +504,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
           vec2 materialMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
           vec2 materialMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
           vec2 materialMaskTextureCoordinates${i} = v_textureCoordinates.xy * materialMaskScale${i} + materialMaskTranslation${i};
-          vec4 materialColor${i} = texture2D(u_dayTextures[${i}], materialMaskTextureCoordinates${i});
+          vec4 materialColor${i} = texture(u_dayTextures[${i}], materialMaskTextureCoordinates${i});
           finalMaterialColor = materialColor${i};
           `;
       }
@@ -532,7 +532,7 @@ GlobeSurfaceShaderSet.prototype.getShaderProgram = function (options) {
           vec2 offsetMaskTranslation${i} = u_dayTextureTranslationAndScale[${i}].xy;
           vec2 offsetMaskScale${i} = u_dayTextureTranslationAndScale[${i}].zw;
           vec2 offsetMaskTextureCoordinates${i} = textureCoordinates * offsetMaskScale${i} + offsetMaskTranslation${i};
-          vec4 offsetColor${i} = texture2D(u_dayTextures[${i}], offsetMaskTextureCoordinates${i});
+          vec4 offsetColor${i} = texture(u_dayTextures[${i}], offsetMaskTextureCoordinates${i});
           finalOffsetColor = offsetColor${i};
           `;
       }

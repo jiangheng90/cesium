@@ -4,9 +4,32 @@
 
 #### @cesium/engine
 
+#### Major Announcements :loudspeaker:
+
+- CesiumJS now defaults to using a WebGL2 context for rendering. WebGL2 is widely supported on all platforms and this results in better feature support across devices, especially mobile.
+  - WebGL1 is supported. If WebGL2 is not available, CesiumJS will automatically fall back to WebGL1.
+  - In order to work in a WebGL2 context, any custom materials, custom primitives or custom shaders will need to be upgraded to use GLSL 300.
+  - Otherwise to request a WebGL 1 context, set `requestWebgl1` to `true` when providing `ContextOptions` as shown below:
+    ```js
+    const viewer = new Viewer("cesiumContainer", {
+      contextOptions: {
+        requestWebgl1: true,
+      },
+    });
+    ```
+
+##### Additions :tada:
+
+- Added `FeatureDetection.supportsWebgl2` to detect if a WebGL2 rendering context in the current browser.
+
 ##### Fixes :wrench:
 
 - Fixed a bug decoding glTF Draco attributes with quantization bits above 16. [#7471](https://github.com/CesiumGS/cesium/issues/7471)
+- Fixed an edge case in `viewer.flyTo` when flying to a imagery layer with certain terrain providers. [#10937](https://github.com/CesiumGS/cesium/issues/10937)
+- Fixed a crash in terrain sampling if any points have an indefined position due to being outside the rectangle. [#10931](https://github.com/CesiumGS/cesium/pull/10931)
+- Fixed label background rendering. [#11040](https://github.com/CesiumGS/cesium/issues/11040)
+- Fixed a bug where scale was not being applied to the top-level tileset geometric error. [#11047](https://github.com/CesiumGS/cesium/pull/11047)
+- Updating Bing Maps top page hyperlink to Bing Maps ToU hyperlink [#11049](https://github.com/CesiumGS/cesium/pull/11049)
 
 ### 1.101 - 2023-01-02
 

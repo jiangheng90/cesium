@@ -170,6 +170,7 @@ function Cesium3DTileset(options) {
   this._asset = undefined; // Metadata for the entire tileset
   this._properties = undefined; // Metadata for per-model/point/etc properties
   this._geometricError = undefined; // Geometric error when the tree is not rendered at all
+  this._scaledGeometricError = undefined; // Geometric error scaled by root tile scale
   this._extensionsUsed = undefined;
   this._extensions = undefined;
   this._modelUpAxis = undefined;
@@ -1116,6 +1117,11 @@ function Cesium3DTileset(options) {
       // GW-ADD
       resource = that.getResourceFromExtraServer(resource);
       // GW-ADD
+      // Set these before loading the tileset since _geometricError
+      // and _scaledGeometricError get accessed during tile creation
+      that._geometricError = tilesetJson.geometricError;
+      that._scaledGeometricError = tilesetJson.geometricError;
+
       that._root = that.loadTileset(resource, tilesetJson);
 
       // Handle legacy gltfUpAxis option
@@ -1128,7 +1134,6 @@ function Cesium3DTileset(options) {
       const asset = tilesetJson.asset;
       that._asset = asset;
       that._properties = tilesetJson.properties;
-      that._geometricError = tilesetJson.geometricError;
       that._extensionsUsed = tilesetJson.extensionsUsed;
       that._extensions = tilesetJson.extensions;
       that._modelUpAxis = modelUpAxis;
