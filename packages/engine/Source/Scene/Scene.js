@@ -81,6 +81,7 @@ import BoundingRectangleCollisionChecker from "./BoundingRectangleCollisionCheck
 import Cartesian2 from "../Core/Cartesian2.js";
 import GWBillboard from "./GWBillboard.js";
 import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
+import TileServiceLayerCollection from "./TileServiceLayerCollection.js";
 // GW-ADD
 
 const requestRenderAfterFrame = function (scene) {
@@ -3691,7 +3692,7 @@ function calculateCollision(scene) {
 }
 
 const visibleTileIds = [];
-function renderServiceTile(scene) {
+function renderTileServiceLayer(scene) {
   visibleTileIds.length = 0;
   const frameState = scene._frameState;
   const hasSurface = scene && scene._globe && scene._globe._surface;
@@ -3734,11 +3735,18 @@ function updateAndRenderPrimitives(scene) {
   }
 
   // GW-ADD
-  renderServiceTile(scene);
-  if (scene._enableCollisionDetection) {
-    calculateCollision(scene);
-  } else {
-    calculateCluster(scene);
+  const tileServiceLayers = scene.tileServiceLayers;
+  if (
+    tileServiceLayers instanceof TileServiceLayerCollection &&
+    tileServiceLayers.length > 0
+  ) {
+    renderTileServiceLayer(scene);
+    // updateHeights(scene);
+    if (scene._enableCollisionDetection) {
+      calculateCollision(scene);
+    } else {
+      calculateCluster(scene);
+    }
   }
   // GW-ADD
 }

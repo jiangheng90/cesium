@@ -36,10 +36,10 @@
           // imageryProvider: new Cesium.TileMapServiceImageryProvider({
           //   url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
           // }),
-          imageryProvider: new Cesium.ArcGisMapServerImageryProvider({
-            url:
-              "https://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/",
-          }),
+          // imageryProvider: new Cesium.ArcGisMapServerImageryProvider({
+          //   url:
+          //     "https://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/",
+          // }),
           terrainProvider: new Cesium.TiledTerrainProvider({
             connections: [
               {
@@ -81,7 +81,7 @@
         // layer.magnificationFilter = Cesium.TextureMagnificationFilter.NEAREST;
 
         const provider = new Cesium.Image3DAnnotationProvider({
-          viewer: viewer,
+          scene: viewer.scene,
           url:
             "http://atlas.geoway.com.cn:31080/mapserver/label/osm_china/getImgData?styleId=zhuji&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
 
@@ -90,6 +90,7 @@
           tileWidth: 512,
           tileHeight: 512,
           ratio: 2,
+          // scale: 2,
           priority: 2,
           tileMatrixLabels: [
             "2",
@@ -156,7 +157,7 @@
         function addAnotherLayer() {
           viewer.tileServiceLayers.addTileServiceProvider(
             new Cesium.Image3DAnnotationProvider({
-              viewer: viewer,
+              scene: viewer.scene,
               url:
                 "http://intenal.geoway-atlas.com:31280/mapserver/label/juhe/getImgData?styleId=xzq&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
 
@@ -197,6 +198,12 @@
           destination: Cesium.Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2),
           duration: 0,
         });
+
+        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        handler.setInputAction(function (movement) {
+          const pickedObject = viewer.scene.pick(movement.position);
+          console.log(pickedObject);
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
         //Sandcastle_End
         Sandcastle.finishedLoading();
       };

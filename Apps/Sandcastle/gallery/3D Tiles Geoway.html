@@ -35,11 +35,78 @@
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
           useIndependenceVolumeCulling3DTiles: true,
+          // imageryProvider: new Cesium.GridImageryProvider(),
+          terrainProvider: new Cesium.TiledTerrainProvider({
+            connections: [
+              {
+                priority: 0,
+                url:
+                  "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/dem30_1_1500000/terrain/data?level={TileMatrix}&col={TileCol}&row={TileRow}",
+                credit: new Cesium.Credit("WorldTerrain"),
+                rectangle: new Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+                minLevel: 1,
+                maxLevel: 14,
+                tileMatrixLabels: [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "10",
+                  "11",
+                  "12",
+                  "13",
+                  "14",
+                  "15",
+                ],
+              },
+            ],
+          }),
         });
-        viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
+        // viewer.extend(Cesium.viewerCesium3DTilesInspectorMixin);
         if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
           viewer.resolutionScale = window.devicePixelRatio;
         }
+        // viewer.tileServiceLayers.addTileServiceProvider(
+        //   new Cesium.Image3DAnnotationProvider({
+        //     scene: viewer.scene,
+        //     url:
+        //       "http://atlas.geoway.com.cn:31080/mapserver/label/osm_china/getImgData?styleId=zhuji&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
+
+        //     minimumLevel: 0,
+        //     maximumLevel: 21,
+        //     tileWidth: 512,
+        //     tileHeight: 512,
+        //     ratio: 2,
+        //     priority: 2,
+        //     scale: 1.25,
+        //     tileMatrixLabels: [
+        //       "2",
+        //       "3",
+        //       "4",
+        //       "5",
+        //       "6",
+        //       "7",
+        //       "8",
+        //       "9",
+        //       "10",
+        //       "11",
+        //       "12",
+        //       "13",
+        //       "14",
+        //       "15",
+        //       "16",
+        //       "17",
+        //       "18",
+        //       "19",
+        //       "20",
+        //     ],
+        //   })
+        // );
         const tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset({
             url:
@@ -48,10 +115,17 @@
             isGeoway3DTileset: true,
             needUpdate: false,
             skipLevelOfDetail: true,
+            show: false,
             // globalScreenSpaceErrorFactor: 2,
           })
         );
         viewer.zoomTo(tileset);
+
+        // const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        // handler.setInputAction(function (movement) {
+        //   const pickedObject = viewer.scene.pick(movement.position);
+        //   console.log(pickedObject)
+        // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
         //Sandcastle_End
         Sandcastle.finishedLoading();

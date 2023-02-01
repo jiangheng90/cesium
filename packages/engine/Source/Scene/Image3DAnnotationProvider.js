@@ -10,6 +10,9 @@ import createGuid from "../Core/createGuid.js";
 import Color from "../Core/Color.js";
 import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
 import DeveloperError from "../Core/DeveloperError.js";
+import Cartesian2 from "../Core/Cartesian2.js";
+import HorizontalOrigin from "./HorizontalOrigin.js";
+import VerticalOrigin from "./VerticalOrigin.js";
 
 function Image3DAnnotationProvider(options) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
@@ -27,7 +30,7 @@ function Image3DAnnotationProvider(options) {
     this._tilingScheme.rectangle
   );
   this._tileMatrixLabels = options.tileMatrixLabels;
-  this._scene = options.viewer.scene;
+  this._scene = options.scene;
 
   const tempUrl = options.ratio
     ? `${options.url}&ratio=${options.ratio}`
@@ -212,8 +215,7 @@ Image3DAnnotationProvider.prototype.requestData = function (
 };
 
 Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
-  const that = this;
-  that.tile = tile;
+  this.tile = tile;
   const data = tile._data;
 
   if (!defined(data.content)) {
@@ -225,10 +227,10 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
     return;
   }
   tile.collection = new GWBillboardCollection({
-    scene: that._scene,
+    scene: this._scene,
     provider: this,
   });
-  tile.collection.show = that._show;
+  tile.collection.show = this._show;
   tile.collection.justAdd = true;
 
   for (let i = 0; i < len; ++i) {
@@ -246,11 +248,22 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
 
     let id = data.content[i]["id"];
     if (!defined(id)) {
-      id = that._index;
-      that._index++;
+      id = this._index;
+      this._index++;
     }
 
-    tile.collection.add({
+    const originOffset = data.content[i].origin;
+    const pixelOffset = new Cartesian2();
+    if (
+      originOffset &&
+      originOffset.x !== undefined &&
+      originOffset.y !== undefined
+    ) {
+      pixelOffset.x = -originOffset.x * this.scale;
+      pixelOffset.y = originOffset.y * this.scale;
+    }
+
+    const billboard = tile.collection.add({
       id: id,
       position: Cartesian3.fromDegrees(lon, lat),
       image: data.image,
@@ -264,10 +277,19 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
       ),
       width: width * this.scale,
       height: height * this.scale,
+      horizontalOrigin: originOffset
+        ? HorizontalOrigin.LEFT
+        : HorizontalOrigin.CENTER,
+      verticalOrigin: originOffset
+        ? VerticalOrigin.BOTTOM
+        : VerticalOrigin.CENTER,
+      pixelOffset: pixelOffset,
       heightReference: heightReference,
-      show: that._show,
+      show: this._show,
       animation: GWBillboardAnimationType.HIDE,
     });
+
+    billboard.feature = data.content[i];
   }
 };
 
