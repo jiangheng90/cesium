@@ -133,6 +133,9 @@ function listenToPinch(aggregator, modifier, canvas) {
 function listenToWheel(aggregator, modifier) {
   const key = getKey(CameraEventType.WHEEL, modifier);
 
+  const pressTime = aggregator._pressTime;
+  const releaseTime = aggregator._releaseTime;
+
   const update = aggregator._update;
   update[key] = true;
 
@@ -141,21 +144,37 @@ function listenToWheel(aggregator, modifier) {
     movement = aggregator._movement[key] = {};
   }
 
+  let lastMovement = aggregator._lastMovement[key];
+  if (!defined(lastMovement)) {
+    lastMovement = aggregator._lastMovement[key] = {
+      startPosition: new Cartesian2(),
+      endPosition: new Cartesian2(),
+      valid: false,
+    };
+  }
+
   movement.startPosition = new Cartesian2();
   movement.endPosition = new Cartesian2();
+
+  let debounceZoom;
 
   aggregator._eventHandler.setInputAction(
     function (delta) {
       // TODO: magic numbers
       const arcLength = 15.0 * CesiumMath.toRadians(delta);
-      if (!update[key]) {
-        movement.endPosition.y = movement.endPosition.y + arcLength;
-      } else {
-        Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
-        movement.endPosition.x = 0.0;
-        movement.endPosition.y = arcLength;
-        update[key] = false;
+      pressTime[key] = releaseTime[key] = new Date();
+      Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
+      movement.endPosition.x = 0.0;
+      movement.endPosition.y = arcLength;
+      Cartesian2.clone(movement.endPosition, lastMovement.endPosition);
+      lastMovement.valid = true;
+      if (debounceZoom) {
+        clearTimeout(debounceZoom);
       }
+      debounceZoom = setTimeout(function () {
+        update[key] = true;
+      }, 10);
+      update[key] = false;
     },
     ScreenSpaceEventType.WHEEL,
     modifier

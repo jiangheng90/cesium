@@ -306,7 +306,7 @@ function ScreenSpaceCameraController(scene) {
   );
 
   // Constants, Make any of these public?
-  this._zoomFactor = 5.0;
+  this._zoomFactor = 2.0;
   this._rotateFactor = undefined;
   this._rotateRateRangeAdjustment = undefined;
   this._maximumRotateRate = 1.77;
@@ -596,9 +596,9 @@ function handleZoom(
     return;
   }
 
-  const sameStartPosition = Cartesian2.equals(
-    startPosition,
-    object._zoomMouseStart
+  const sameStartPosition = defaultValue(
+    movement.inertiaEnabled,
+    Cartesian2.equals(startPosition, object._zoomMouseStart)
   );
   let zoomingOnVector = object._zoomingOnVector;
   let rotatingZoom = object._rotatingZoom;
