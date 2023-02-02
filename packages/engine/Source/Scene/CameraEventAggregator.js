@@ -152,6 +152,7 @@ function listenToWheel(aggregator, modifier) {
       valid: false,
     };
   }
+  let zoomDebounce;
   // GW-ADD
 
   movement.startPosition = new Cartesian2();
@@ -172,6 +173,12 @@ function listenToWheel(aggregator, modifier) {
         update[key] = false;
       }
        */
+      if (zoomDebounce) {
+        clearTimeout(zoomDebounce);
+        zoomDebounce = setTimeout(function () {
+          update[key] = true;
+        }, 0);
+      }
       pressTime[key] = releaseTime[key] = new Date();
       movement.endPosition.y = arcLength;
       Cartesian2.clone(movement.endPosition, lastMovement.endPosition);
