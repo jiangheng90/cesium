@@ -133,9 +133,6 @@ function listenToPinch(aggregator, modifier, canvas) {
 function listenToWheel(aggregator, modifier) {
   const key = getKey(CameraEventType.WHEEL, modifier);
 
-  const pressTime = aggregator._pressTime;
-  const releaseTime = aggregator._releaseTime;
-
   const update = aggregator._update;
   update[key] = true;
 
@@ -144,6 +141,9 @@ function listenToWheel(aggregator, modifier) {
     movement = aggregator._movement[key] = {};
   }
 
+  // GW-ADD
+  const pressTime = aggregator._pressTime;
+  const releaseTime = aggregator._releaseTime;
   let lastMovement = aggregator._lastMovement[key];
   if (!defined(lastMovement)) {
     lastMovement = aggregator._lastMovement[key] = {
@@ -152,29 +152,32 @@ function listenToWheel(aggregator, modifier) {
       valid: false,
     };
   }
+  // GW-ADD
 
   movement.startPosition = new Cartesian2();
+  Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
   movement.endPosition = new Cartesian2();
-
-  let debounceZoom;
 
   aggregator._eventHandler.setInputAction(
     function (delta) {
       // TODO: magic numbers
       const arcLength = 15.0 * CesiumMath.toRadians(delta);
+      /* GW-UPDATE
+      if (!update[key]) {
+        movement.endPosition.y = movement.endPosition.y + arcLength;
+      } else {
+        Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
+        movement.endPosition.x = 0.0;
+        movement.endPosition.y = arcLength;
+        update[key] = false;
+      }
+       */
       pressTime[key] = releaseTime[key] = new Date();
-      Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
-      movement.endPosition.x = 0.0;
       movement.endPosition.y = arcLength;
       Cartesian2.clone(movement.endPosition, lastMovement.endPosition);
       lastMovement.valid = true;
-      if (debounceZoom) {
-        clearTimeout(debounceZoom);
-      }
-      debounceZoom = setTimeout(function () {
-        update[key] = true;
-      }, 10);
       update[key] = false;
+      // GW-UPDATE
     },
     ScreenSpaceEventType.WHEEL,
     modifier
