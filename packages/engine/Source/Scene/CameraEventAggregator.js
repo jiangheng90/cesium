@@ -141,29 +141,13 @@ function listenToWheel(aggregator, modifier) {
     movement = aggregator._movement[key] = {};
   }
 
-  // GW-ADD
-  const pressTime = aggregator._pressTime;
-  const releaseTime = aggregator._releaseTime;
-  let lastMovement = aggregator._lastMovement[key];
-  if (!defined(lastMovement)) {
-    lastMovement = aggregator._lastMovement[key] = {
-      startPosition: new Cartesian2(),
-      endPosition: new Cartesian2(),
-      valid: false,
-    };
-  }
-  let zoomDebounce;
-  // GW-ADD
-
   movement.startPosition = new Cartesian2();
-  Cartesian2.clone(Cartesian2.ZERO, movement.startPosition);
   movement.endPosition = new Cartesian2();
 
   aggregator._eventHandler.setInputAction(
     function (delta) {
       // TODO: magic numbers
       const arcLength = 15.0 * CesiumMath.toRadians(delta);
-      /* GW-UPDATE
       if (!update[key]) {
         movement.endPosition.y = movement.endPosition.y + arcLength;
       } else {
@@ -172,19 +156,6 @@ function listenToWheel(aggregator, modifier) {
         movement.endPosition.y = arcLength;
         update[key] = false;
       }
-       */
-      if (zoomDebounce) {
-        clearTimeout(zoomDebounce);
-        zoomDebounce = setTimeout(function () {
-          update[key] = true;
-        }, 0);
-      }
-      pressTime[key] = releaseTime[key] = new Date();
-      movement.endPosition.y = arcLength;
-      Cartesian2.clone(movement.endPosition, lastMovement.endPosition);
-      lastMovement.valid = true;
-      update[key] = false;
-      // GW-UPDATE
     },
     ScreenSpaceEventType.WHEEL,
     modifier

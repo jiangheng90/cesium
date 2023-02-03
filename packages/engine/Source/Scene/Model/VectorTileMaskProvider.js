@@ -1,9 +1,10 @@
-import defaultValue from "../Core/defaultValue.js";
-import defined from "../Core/defined.js";
-import DeveloperError from "../Core/DeveloperError.js";
-import Rectangle from "../Core/Rectangle.js";
-import Resource from "../Core/Resource.js";
-import ImageryProvider from "./ImageryProvider.js";
+import defaultValue from "../../Core/defaultValue.js";
+import defined from "../../Core/defined.js";
+import DeveloperError from "../../Core/DeveloperError.js";
+import Event from "../../Core/Event.js";
+import Rectangle from "../../Core/Rectangle.js";
+import Resource from "../../Core/Resource.js";
+import ImageryProvider from "../ImageryProvider.js";
 
 /**
  *
@@ -34,6 +35,7 @@ function VectorTileMaskProvider(options) {
   if (defined(this._proxy) && !defined(this._maximumLevel)) {
     throw new DeveloperError(`maximumLevel is reqired!`);
   }
+  this._errorEvent = new Event();
 }
 
 Object.defineProperties(VectorTileMaskProvider.prototype, {
@@ -89,6 +91,12 @@ Object.defineProperties(VectorTileMaskProvider.prototype, {
   maximumLevel: {
     get: function () {
       return this._maximumLevel;
+    },
+  },
+
+  errorEvent: {
+    get: function () {
+      return this._errorEvent;
     },
   },
 });
@@ -203,7 +211,7 @@ VectorTileMaskProvider.prototype.requestImage = function (
 ) {
   return ImageryProvider.loadImage(
     this,
-    buildImageResource(west, south, east, north, request)
+    buildImageResource(this, west, south, east, north, request)
   );
 };
 

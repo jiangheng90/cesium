@@ -344,6 +344,9 @@ function Context(canvas, options) {
   // default emissive texture has a value of (0, 0, 0)
   // default normal texture is +z which is encoded as (0.5, 0.5, 1)
   this._defaultTexture = undefined;
+  // GW-ADD
+  this._defaultEmptyTexture = undefined;
+  // GW-ADD
   this._defaultEmissiveTexture = undefined;
   this._defaultNormalTexture = undefined;
   this._defaultCubeMap = undefined;
@@ -1021,6 +1024,31 @@ Object.defineProperties(Context.prototype, {
       return this._defaultTexture;
     },
   },
+  // GW-ADD
+  /**
+   * A 1x1 RGBA texture initialized to [255, 255, 255, 255].  This can
+   * be used as a placeholder texture while other textures are downloaded.
+   * @memberof Context.prototype
+   * @type {Texture}
+   */
+  defaultEmptyTexture: {
+    get: function () {
+      if (this._defaultEmptyTexture === undefined) {
+        this._defaultEmptyTexture = new Texture({
+          context: this,
+          source: {
+            width: 1,
+            height: 1,
+            arrayBufferView: new Uint8Array([0, 0, 0, 0]),
+          },
+          flipY: false,
+        });
+      }
+
+      return this._defaultEmptyTexture;
+    },
+  },
+  // GW-ADD
   /**
    * A 1x1 RGB texture initialized to [0, 0, 0] representing a material that is
    * not emissive. This can be used as a placeholder texture for emissive

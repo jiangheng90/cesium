@@ -33,9 +33,9 @@
         "use strict";
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
-          // imageryProvider: new Cesium.TileMapServiceImageryProvider({
-          //   url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
-          // }),
+          imageryProvider: new Cesium.TileMapServiceImageryProvider({
+            url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          }),
           // imageryProvider: new Cesium.ArcGisMapServerImageryProvider({
           //   url:
           //     "https://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/",

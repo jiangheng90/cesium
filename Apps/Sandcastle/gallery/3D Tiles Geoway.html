@@ -35,7 +35,9 @@
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
           useIndependenceVolumeCulling3DTiles: true,
-          // imageryProvider: new Cesium.GridImageryProvider(),
+          imageryProvider: new Cesium.TileMapServiceImageryProvider({
+            url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          }),
           terrainProvider: new Cesium.TiledTerrainProvider({
             connections: [
               {
@@ -71,42 +73,7 @@
         if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
           viewer.resolutionScale = window.devicePixelRatio;
         }
-        // viewer.tileServiceLayers.addTileServiceProvider(
-        //   new Cesium.Image3DAnnotationProvider({
-        //     scene: viewer.scene,
-        //     url:
-        //       "http://atlas.geoway.com.cn:31080/mapserver/label/osm_china/getImgData?styleId=zhuji&x={TileCol}&y={TileRow}&l={TileMatrix}&tilesize=512",
 
-        //     minimumLevel: 0,
-        //     maximumLevel: 21,
-        //     tileWidth: 512,
-        //     tileHeight: 512,
-        //     ratio: 2,
-        //     priority: 2,
-        //     scale: 1.25,
-        //     tileMatrixLabels: [
-        //       "2",
-        //       "3",
-        //       "4",
-        //       "5",
-        //       "6",
-        //       "7",
-        //       "8",
-        //       "9",
-        //       "10",
-        //       "11",
-        //       "12",
-        //       "13",
-        //       "14",
-        //       "15",
-        //       "16",
-        //       "17",
-        //       "18",
-        //       "19",
-        //       "20",
-        //     ],
-        //   })
-        // );
         const tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset({
             url:
@@ -115,7 +82,30 @@
             isGeoway3DTileset: true,
             needUpdate: false,
             skipLevelOfDetail: true,
-            show: false,
+            maskProvider: new Cesium.VectorTileMaskProvider({
+              url:
+                "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
+              proxy: "http://172.16.67.26:7777/getMap",
+              maximumLevel: 20,
+              styleId: "ws",
+            }),
+            customShader: new Cesium.CustomShader({
+              lightingModel: Cesium.LightingModel.UNLIT,
+              fragmentShaderText: `
+              // Color tiles by distance to the camera
+              void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material)
+              {
+                vec3 positionMC = fsInput.attributes.positionMC;
+                vec2 tileUV = czm_calculateTileCoordinates(positionMC, model_center, model_halfAxes);
+                vec4 maskColor = texture(model_mask, tileUV);
+    
+                material.diffuse = maskColor.rgb * maskColor.a + material.diffuse * (1.0 - maskColor.a);
+                if(maskColor.rgb == vec3(0.0)) {
+                  discard;
+                }
+              }
+              `,
+            }),
             // globalScreenSpaceErrorFactor: 2,
           })
         );

@@ -1012,6 +1012,8 @@ function Cesium3DTileset(options) {
 
   this._offsetHeight = 0;
   this._needUpdate = defaultValue(options.needUpdate, true);
+
+  this._maskProvider = options.maskProvider;
   // GW-ADD
 
   const that = this;
@@ -2088,6 +2090,17 @@ Object.defineProperties(Cesium3DTileset.prototype, {
       this._instanceFeatureIdLabel = value;
     },
   },
+
+  // GW-ADD
+  maskProvider: {
+    get: function () {
+      return this._maskProvider;
+    },
+    set: function (value) {
+      this._maskProvider = value;
+    },
+  },
+  // GW-ADD
 });
 
 /**

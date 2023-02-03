@@ -245,11 +245,6 @@ function ScreenSpaceCameraController(scene) {
    */
   this.enableCollisionDetection = true;
 
-  // GW-ADD
-  this.enableCameraLimit = false;
-  this.limitAngle = 110;
-  // GW-ADD
-
   this._scene = scene;
   this._globe = undefined;
   this._ellipsoid = undefined;
@@ -306,7 +301,7 @@ function ScreenSpaceCameraController(scene) {
   );
 
   // Constants, Make any of these public?
-  this._zoomFactor = 2.0;
+  this._zoomFactor = 5.0;
   this._rotateFactor = undefined;
   this._rotateRateRangeAdjustment = undefined;
   this._maximumRotateRate = 1.77;
@@ -596,9 +591,9 @@ function handleZoom(
     return;
   }
 
-  const sameStartPosition = defaultValue(
-    movement.inertiaEnabled,
-    Cartesian2.equals(startPosition, object._zoomMouseStart)
+  const sameStartPosition = Cartesian2.equals(
+    startPosition,
+    object._zoomMouseStart
   );
   let zoomingOnVector = object._zoomingOnVector;
   let rotatingZoom = object._rotatingZoom;
@@ -2244,18 +2239,7 @@ const tilt3DMatrix = new Matrix3();
 const tilt3DCart = new Cartographic();
 const tilt3DLookUp = new Cartesian3();
 
-// GW-ADD
-let tiltenable = true;
-// GW-ADD
-
 function tilt3D(controller, startPosition, movement) {
-  // GW-ADD
-  if (defined(movement.endPosition) && defined(movement.startPosition)) {
-    if (movement.endPosition.y - movement.startPosition.y > 0) {
-      tiltenable = true;
-    }
-  }
-  // GW-ADD
   const scene = controller._scene;
   const camera = scene.camera;
 
@@ -2287,12 +2271,6 @@ function tilt3D(controller, startPosition, movement) {
     tilt3DCart
   );
 
-  // GW-ADD
-  if (!tiltenable) {
-    return;
-  }
-  // GW-ADD
-
   if (
     controller._tiltOnEllipsoid ||
     cartographic.height > controller._minimumCollisionTerrainHeight
@@ -2302,18 +2280,6 @@ function tilt3D(controller, startPosition, movement) {
   } else {
     tilt3DOnTerrain(controller, startPosition, movement);
   }
-
-  // GW-ADD
-  if (scene.screenSpaceCameraController.enableCollisionDetection) {
-    const limitAngle = scene.screenSpaceCameraController.limitAngle;
-    if (
-      camera.pitch > Math.cos(CesiumMath.toRadians(limitAngle)) &&
-      scene.screenSpaceCameraController.enableCameraLimit
-    ) {
-      tiltenable = false;
-    }
-  }
-  // GW-ADD
 }
 
 const tilt3DOnEllipsoidCartographic = new Cartographic();

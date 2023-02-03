@@ -36,6 +36,13 @@ import ModelUtility from "./ModelUtility.js";
 import oneTimeWarning from "../../Core/oneTimeWarning.js";
 import PntsLoader from "./PntsLoader.js";
 import StyleCommandsNeeded from "./StyleCommandsNeeded.js";
+// GW-ADD
+import Rectangle from "../../Core/Rectangle.js";
+import CesiumMath from "../../Core/Math.js";
+import Request from "../../Core/Request.js";
+import ModelMaskLayer from "./ModelMaskLayer.js";
+import OrientedBoundingBox from "../../Core/OrientedBoundingBox.js";
+// GW-ADD
 
 /**
  * <div class="notice">
@@ -468,6 +475,37 @@ function Model(options) {
    * @private
    */
   this.pickObject = options.pickObject;
+
+  // GW-ADD
+  /**
+   * @type {Rectangle}
+   *
+   * @default undefined
+   */
+  this._rectangle = options.rectangle;
+  this._maskProvider = undefined;
+  this._mask = undefined;
+  this.maskProviderDirty = true;
+  this._boundingVolume = options.boundingVolume;
+  if (this._boundingVolume instanceof OrientedBoundingBox) {
+    const halfAxes = this._boundingVolume.halfAxes;
+    const x = Matrix3.getColumn(halfAxes, 0, new Cartesian3());
+    const y = Matrix3.getColumn(halfAxes, 1, new Cartesian3());
+    const z = Matrix3.getColumn(halfAxes, 2, new Cartesian3());
+    const xLength = Cartesian3.magnitude(x);
+    const yLength = Cartesian3.magnitude(y);
+    const zLength = Cartesian3.magnitude(z);
+    this._halfAxes = new Cartesian3(xLength, yLength, zLength);
+    const invModelMatrix = new Matrix4();
+    Matrix4.inverse(options.modelMatrix, invModelMatrix);
+
+    this._boundingCenter = Matrix4.multiplyByPoint(
+      invModelMatrix,
+      this._boundingVolume.center,
+      new Cartesian3()
+    );
+  }
+  // GW-ADD
 }
 
 function createModelFeatureTables(model, structuralMetadata) {
@@ -1534,6 +1572,29 @@ Object.defineProperties(Model.prototype, {
     },
   },
 
+  // GW-ADD
+  maskProvider: {
+    get: function () {
+      return this._maskProvider;
+    },
+    set: function (value) {
+      if (value !== this._maskProvider) {
+        this.maskProviderDirty = true;
+        this._maskProvider = value;
+      }
+    },
+  },
+
+  mask: {
+    get: function () {
+      return this._mask;
+    },
+    set: function (value) {
+      this._mask = value;
+    },
+  },
+  // GW-ADD
+
   /**
    * Gets the credit that will be displayed for the model.
    *
@@ -1813,7 +1874,6 @@ Model.prototype.update = function (frameState) {
     // Don't render until the next frame after the ready promise is resolved
     return;
   }
-
   updatePickIds(this);
 
   // Update the scene graph and draw commands for any changes in model's properties
@@ -1831,6 +1891,9 @@ function processLoader(model, frameState) {
 
 function updateCustomShader(model, frameState) {
   if (defined(model._customShader)) {
+    // GW-ADD
+    updateMask(model, frameState);
+    // GW-ADD
     model._customShader.update(frameState);
   }
 }
@@ -2196,6 +2259,28 @@ function updateReferenceMatrices(model, frameState) {
     );
   }
 }
+
+// GW-ADD
+function updateMask(model, frameState) {
+  if (!model.maskProviderDirty || !(model._rectangle instanceof Rectangle)) {
+    return;
+  }
+  if (model.maskProvider) {
+    const east = CesiumMath.toDegrees(model._rectangle.east);
+    const west = CesiumMath.toDegrees(model._rectangle.west);
+    const south = CesiumMath.toDegrees(model._rectangle.south);
+    const north = CesiumMath.toDegrees(model._rectangle.north);
+
+    const request = new Request();
+
+    model._mask = new ModelMaskLayer(frameState.context, model.maskProvider);
+    model._mask._requestImagery(west, south, east, north, request);
+  } else {
+    model._mask = new ModelMaskLayer(frameState.context);
+  }
+  model.maskProviderDirty = false;
+}
+// GW-ADD
 
 function updateSceneGraph(model, frameState) {
   const sceneGraph = model._sceneGraph;
@@ -2873,6 +2958,10 @@ function makeModelOptions(loader, modelType, options) {
     pointCloudShading: options.pointCloudShading,
     classificationType: options.classificationType,
     pickObject: options.pickObject,
+    // GW-ADD
+    rectangle: options.rectangle,
+    boundingVolume: options.boundingVolume,
+    // GW-ADD
   };
 }
 
