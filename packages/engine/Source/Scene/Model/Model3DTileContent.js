@@ -6,11 +6,6 @@ import DeveloperError from "../../Core/DeveloperError.js";
 import Pass from "../../Renderer/Pass.js";
 import ModelAnimationLoop from "../ModelAnimationLoop.js";
 import Model from "./Model.js";
-// GW-ADD
-import Cartographic from "../../Core/Cartographic.js";
-import OrientedBoundingBox from "../../Core/OrientedBoundingBox.js";
-import Rectangle from "../../Core/Rectangle.js";
-// GW-ADD
 
 /**
  * Represents the contents of a glTF, glb or
@@ -423,23 +418,6 @@ Model3DTileContent.fromGeoJson = function (tileset, tile, resource, geoJson) {
 };
 
 function makeModelOptions(tileset, tile, content, additionalOptions) {
-  //GW-ADD
-  let rectangle;
-  const obb = tile.boundingVolume.boundingVolume;
-  if (obb instanceof OrientedBoundingBox) {
-    const corners = OrientedBoundingBox.computeCorners(obb);
-    const max = corners[corners.length - 1];
-    const min = corners[0];
-    const cartographicMax = Cartographic.fromCartesian(max);
-    const cartographicMin = Cartographic.fromCartesian(min);
-    const west = cartographicMin.longitude;
-    const east = cartographicMax.longitude;
-    const south = cartographicMin.latitude;
-    const north = cartographicMax.latitude;
-    rectangle = Rectangle.fromRadians(west, south, east, north);
-  }
-  //GW-ADD
-
   const mainOptions = {
     cull: false, // The model is already culled by 3D Tiles
     releaseGltfJson: true, // Models are unique and will not benefit from caching so save memory
@@ -469,8 +447,7 @@ function makeModelOptions(tileset, tile, content, additionalOptions) {
     showOutline: tileset.showOutline,
     outlineColor: tileset.outlineColor,
     // GW-ADD
-    rectangle: rectangle,
-    boundingVolume: rectangle ? obb : undefined,
+    tile: tile,
     // GW-ADD
   };
 

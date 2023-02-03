@@ -38,6 +38,9 @@
           imageryProvider: new Cesium.TileMapServiceImageryProvider({
             url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
           }),
+          // contextOptions: {
+          //   requestWebgl1: true,
+          // },
           terrainProvider: new Cesium.TiledTerrainProvider({
             connections: [
               {
@@ -77,18 +80,18 @@
         const tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset({
             url:
-              "http://intenal.geoway-atlas.com:31080/ime-cloud/rest/zhucheng_all_JPG_DSMV5/3dtiles/tileset.json",
+              "http://intenal.geoway-atlas.com:31080/ime-cloud/rest/jm_a01/3dtiles/tileset.json",
             useVisibleByDistanceToCamera: true,
             isGeoway3DTileset: true,
             needUpdate: false,
             skipLevelOfDetail: true,
-            maskProvider: new Cesium.VectorTileMaskProvider({
-              url:
-                "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
-              proxy: "http://172.16.67.26:7777/getMap",
-              maximumLevel: 20,
-              styleId: "ws",
-            }),
+            // maskProvider: new Cesium.VectorTileMaskProvider({
+            //   url:
+            //     "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
+            //   proxy: "http://172.16.67.26:7777/getMap",
+            //   maximumLevel: 20,
+            //   styleId: "ws",
+            // }),
             customShader: new Cesium.CustomShader({
               lightingModel: Cesium.LightingModel.UNLIT,
               fragmentShaderText: `
@@ -100,9 +103,9 @@
                 vec4 maskColor = texture(model_mask, tileUV);
     
                 material.diffuse = maskColor.rgb * maskColor.a + material.diffuse * (1.0 - maskColor.a);
-                if(maskColor.rgb == vec3(0.0)) {
-                  discard;
-                }
+                // if(maskColor.rgb == vec3(0.0)) {
+                //   discard;
+                // }
               }
               `,
             }),

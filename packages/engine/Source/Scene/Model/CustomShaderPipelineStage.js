@@ -150,24 +150,27 @@ CustomShaderPipelineStage.process = function (
   }
   // GW-ADD
   const model = renderResources.model;
-  const additionUniforms = {};
-  shaderBuilder.addUniform("sampler2D", "model_mask");
-  additionUniforms.model_mask = function () {
-    return model._mask.texture;
-  };
-  shaderBuilder.addUniform("vec3", "model_halfAxes");
-  additionUniforms.model_halfAxes = function () {
-    return model._halfAxes;
-  };
-  shaderBuilder.addUniform("vec3", "model_center");
-  additionUniforms.model_center = function () {
-    return model._boundingCenter;
-  };
+  if (model.tile) {
+    const additionUniforms = {};
+    shaderBuilder.addUniform("sampler2D", "model_mask");
+    additionUniforms.model_mask = function () {
+      return model._mask.texture;
+    };
+    shaderBuilder.addUniform("vec3", "model_halfAxes");
+    additionUniforms.model_halfAxes = function () {
+      return model._halfAxes;
+    };
+    shaderBuilder.addUniform("vec3", "model_center");
+    additionUniforms.model_center = function () {
+      return model._boundingCenter;
+    };
 
-  renderResources.uniformMap = combine(
-    renderResources.uniformMap,
-    additionUniforms
-  );
+    renderResources.uniformMap = combine(
+      renderResources.uniformMap,
+      additionUniforms
+    );
+  }
+
   // GW-ADD
 
   const varyings = customShader.varyings;

@@ -482,30 +482,44 @@ function Model(options) {
    *
    * @default undefined
    */
-  this._rectangle = options.rectangle;
+  //GW-ADD
+  this._halfAxes = new Cartesian3();
+  this._boundingCenter = new Cartesian3();
   this._maskProvider = undefined;
   this._mask = undefined;
   this.maskProviderDirty = true;
-  this._boundingVolume = options.boundingVolume;
-  if (this._boundingVolume instanceof OrientedBoundingBox) {
-    const halfAxes = this._boundingVolume.halfAxes;
-    const x = Matrix3.getColumn(halfAxes, 0, new Cartesian3());
-    const y = Matrix3.getColumn(halfAxes, 1, new Cartesian3());
-    const z = Matrix3.getColumn(halfAxes, 2, new Cartesian3());
-    const xLength = Cartesian3.magnitude(x);
-    const yLength = Cartesian3.magnitude(y);
-    const zLength = Cartesian3.magnitude(z);
-    this._halfAxes = new Cartesian3(xLength, yLength, zLength);
-    const invModelMatrix = new Matrix4();
-    Matrix4.inverse(options.modelMatrix, invModelMatrix);
+  if (options.tile) {
+    const tile = options.tile;
+    this.tile = tile;
+    const obb =
+      tile && tile.boundingVolume && tile.boundingVolume.boundingVolume;
 
-    this._boundingCenter = Matrix4.multiplyByPoint(
-      invModelMatrix,
-      this._boundingVolume.center,
-      new Cartesian3()
-    );
+    if (obb instanceof OrientedBoundingBox) {
+      const corners = OrientedBoundingBox.computeCorners(obb);
+      const max = corners[corners.length - 1];
+      const min = corners[0];
+      const cartographicMax = Cartographic.fromCartesian(max);
+      const cartographicMin = Cartographic.fromCartesian(min);
+      const west = cartographicMin.longitude;
+      const east = cartographicMax.longitude;
+      const south = cartographicMin.latitude;
+      const north = cartographicMax.latitude;
+      this._rectangle = Rectangle.fromRadians(west, south, east, north);
+
+      const halfAxes = obb.halfAxes;
+      const x = Matrix3.getColumn(halfAxes, 0, new Cartesian3());
+      const y = Matrix3.getColumn(halfAxes, 1, new Cartesian3());
+      const z = Matrix3.getColumn(halfAxes, 2, new Cartesian3());
+      this._halfAxes.x = Cartesian3.magnitude(x);
+      this._halfAxes.y = Cartesian3.magnitude(y);
+      this._halfAxes.z = Cartesian3.magnitude(z);
+
+      const invModelMatrix = new Matrix4();
+      Matrix4.inverse(options.modelMatrix, invModelMatrix);
+
+      Matrix4.multiplyByPoint(invModelMatrix, obb.center, this._boundingCenter);
+    }
   }
-  // GW-ADD
 }
 
 function createModelFeatureTables(model, structuralMetadata) {
@@ -2959,8 +2973,7 @@ function makeModelOptions(loader, modelType, options) {
     classificationType: options.classificationType,
     pickObject: options.pickObject,
     // GW-ADD
-    rectangle: options.rectangle,
-    boundingVolume: options.boundingVolume,
+    tile: options.tile,
     // GW-ADD
   };
 }
