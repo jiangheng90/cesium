@@ -63,11 +63,8 @@ vec3 computeNormal(ProcessedAttributes attributes)
 #endif
 
 #if defined(HAS_TEXCOORD_2) && defined(HAS_TEXCOORD_3)
-#ifndef WEBGL_2
-#extension GL_EXT_shader_texture_lod : enable
-#endif
 
-void calculateMipLevel(in vec2 inTexCoord, in vec2 vecTile, inout float mipLevel)
+float calculateMipLevel(vec2 inTexCoord, vec2 vecTile)
 {
     vec2 dx = dFdx(inTexCoord * vecTile.x);
     vec2 dy = dFdy(inTexCoord * vecTile.y);
@@ -78,9 +75,10 @@ void calculateMipLevel(in vec2 inTexCoord, in vec2 vecTile, inout float mipLevel
     float offset = (dMax - dMin) / (dMax + dMin);
     offset = clamp(offset, 0.0, 1.0);
     float d = dMax * (1.0 - offset) + dMin * offset;
-    mipLevel = 0.5 * log2(d);
+    float mipLevel = 0.5 * log2(d);
     mipLevel -= 2.;
     mipLevel = mipLevel > 0. ? mipLevel : 0.;
+    return mipLevel;
 }
 #endif
 
@@ -101,19 +99,14 @@ void materialStage(inout czm_modelMaterial material, ProcessedAttributes attribu
 
         #if defined(HAS_TEXCOORD_2) && defined(HAS_TEXCOORD_3)
         vec2 tileUV = TEXCOORD_BASE_COLOR;
-        vec2 tileOffset = vec2(v_texCoord_2.x, v_texCoord_3.x);
-        vec2 tileSize = vec2(v_texCoord_2.y, v_texCoord_3.y);
-            #ifndef WEBGL_2
-            float textureSizeX = 512.;
-            float textureSizeY = 512.;
-            #else
-            float textureSizeX = float(int(textureSize(u_baseColorTexture, 0).x)) / 2.;
-            float textureSizeY = float(int(textureSize(u_baseColorTexture, 0).y)) / 2.;
-            #endif
-        vec2 tSize = vec2(textureSizeX, textureSizeY); 
+        vec2 texCoord_2 = attributes.texCoord_2;
+        vec2 texCoord_3 = attributes.texCoord_3;
+
+        vec2 tileOffset = vec2(texCoord_2.x, texCoord_3.x);
+        vec2 tileSize = vec2(texCoord_2.y, texCoord_3.y);
+        vec2 tSize = czm_getTextureSize(u_baseColorTexture, 0);
         vec2 fractTileUV = fract(tileUV);
-        float mipLevel = 0.;
-        calculateMipLevel(tileUV, tSize, mipLevel);
+        float mipLevel = calculateMipLevel(tileUV, tSize);
         vec2 tileCoord = tileOffset + tileSize * fractTileUV;
         baseColorWithAlpha = czm_srgbToLinear(textureLod(u_baseColorTexture, tileCoord, mipLevel));
         #else

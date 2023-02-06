@@ -56,6 +56,18 @@ function demodernizeShader(input, isFragmentShader) {
       // Replace gl_FragDepth with gl_FragDepthEXT.
       output = output.replaceAll(/gl_FragDepth/g, `gl_FragDepthEXT`);
     }
+
+    // GW-ADD
+    if (/textureLod/.test(output)) {
+      output = `#extension GL_EXT_shader_texture_lod : enable\n${output}`;
+      output = output.replaceAll(/textureLod/g, `texture2DLodEXT`);
+    }
+
+    if (/textureSize/.test(output)) {
+      output = output.replaceAll(/textureSize/g, `getDefaultTextureSize`);
+    }
+
+    // GW-ADD
   } else {
     // Replace the in with attribute.
     output = output.replaceAll(/(in)\s+(vec\d|mat\d|float)/g, `attribute $2`);
