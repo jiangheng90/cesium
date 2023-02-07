@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+    <!-- Use Chrome Frame in IE -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+    />
+    <meta name="description" content="3D Tiles Mask.html" />
+    <meta name="cesium-sandcastle-labels" content="Geoway" />
+    <title>Cesium Demo</title>
+    <script type="text/javascript" src="../Sandcastle-header.js"></script>
+    <script
+      type="text/javascript"
+      src="../../../Build/CesiumUnminified/Cesium.js"
+      nomodule
+    ></script>
+    <script type="module" src="../load-cesium-es6.js"></script>
+  </head>
+  <body
+    class="sandcastle-loading"
+    data-sandcastle-bucket="bucket-requirejs.html"
+  >
+    <style>
+      @import url(../templates/bucket.css);
+    </style>
+    <div id="cesiumContainer" class="fullSize"></div>
+    <div id="loadingOverlay"><h1>Loading...</h1></div>
+    <div id="toolbar"></div>
+    <script id="cesium_sandcastle_script">
+      window.startup = function (Cesium) {
+        "use strict";
+        //Sandcastle_Begin
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+          useIndependenceVolumeCulling3DTiles: true,
+          imageryProvider: new Cesium.TileMapServiceImageryProvider({
+            url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          }),
+          // contextOptions: {
+          //   requestWebgl1: true,
+          // },
+          terrainProvider: new Cesium.TiledTerrainProvider({
+            connections: [
+              {
+                priority: 0,
+                url:
+                  "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/dem30_1_1500000/terrain/data?level={TileMatrix}&col={TileCol}&row={TileRow}",
+                credit: new Cesium.Credit("WorldTerrain"),
+                rectangle: new Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+                minLevel: 1,
+                maxLevel: 14,
+                tileMatrixLabels: [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5",
+                  "6",
+                  "7",
+                  "8",
+                  "9",
+                  "10",
+                  "11",
+                  "12",
+                  "13",
+                  "14",
+                  "15",
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
+          viewer.resolutionScale = window.devicePixelRatio;
+        }
+
+        const tileset = viewer.scene.primitives.add(
+          new Cesium.Cesium3DTileset({
+            url:
+              "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/qx_zhucheng_ktx2/3dtiles/tileset.json",
+            useVisibleByDistanceToCamera: true,
+            isGeoway3DTileset: true,
+            needUpdate: false,
+            skipLevelOfDetail: true,
+            customShader: new Cesium.CustomShader({
+              lightingModel: Cesium.LightingModel.UNLIT,
+              fragmentShaderText: `
+              // Color tiles by distance to the camera
+              void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material)
+              {
+                vec3 positionMC = fsInput.attributes.positionMC;
+                vec2 tileUV = czm_calculateTileCoordinates(positionMC, model_center, model_halfAxes);
+                vec4 maskColor = texture(model_mask, tileUV);
+    
+                material.diffuse = maskColor.rgb * maskColor.a + material.diffuse * (1.0 - maskColor.a);
+              }
+              `,
+            }),
+          })
+        );
+        viewer.zoomTo(tileset);
+
+        const typeOptions = [
+          {
+            text: "clear",
+            onselect: function () {
+              tileset.maskProvider = undefined;
+            },
+          },
+          {
+            text: "vector tile 1",
+            onselect: function () {
+              tileset.maskProvider = new Cesium.VectorTileMaskProvider({
+                url:
+                  "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zhucheng_sjx/export",
+                proxy: "http://172.16.67.26:7777/getMap",
+                maximumLevel: 20,
+                styleId: "ws",
+              });
+            },
+          },
+          {
+            text: "vector tile 2",
+            onselect: function () {
+              tileset.maskProvider = new Cesium.VectorTileMaskProvider({
+                url:
+                  "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
+                proxy: "http://172.16.67.26:7777/getMap",
+                maximumLevel: 20,
+                styleId: "ws",
+              });
+            },
+          },
+          {
+            text: "polygon",
+            onselect: function () {
+              tileset.maskProvider = new Cesium.PolygonMaskProvider({
+                color: new Cesium.Color(1, 0, 0, 0.5),
+                hierarchies: [
+                  new Cesium.PolygonHierarchy(
+                    [
+                      new Cesium.Cartesian3(
+                        -2534502.4503949177,
+                        4497017.087342292,
+                        3733888.877145117
+                      ),
+                      new Cesium.Cartesian3(
+                        -2532103.599985605,
+                        4508894.151723428,
+                        3721104.282256185
+                      ),
+                      new Cesium.Cartesian3(
+                        -2542625.8613830926,
+                        4502502.524167168,
+                        3721673.172855103
+                      ),
+                    ],
+                    [
+                      new Cesium.PolygonHierarchy(
+                        [
+                          new Cesium.Cartesian3(
+                            -2541267.958902957,
+                            4502906.679998857,
+                            3722308.640856004
+                          ),
+                          new Cesium.Cartesian3(
+                            -2534268.3362733712,
+                            4506693.746605615,
+                            3722465.371890358
+                          ),
+                          new Cesium.Cartesian3(
+                            -2535310.2646393697,
+                            4499564.567633204,
+                            3730273.518173729
+                          ),
+                        ],
+                        [
+                          new Cesium.PolygonHierarchy(
+                            [
+                              new Cesium.Cartesian3(
+                                -2535796.952030279,
+                                4500617.833560709,
+                                3728719.0890152166
+                              ),
+                              new Cesium.Cartesian3(
+                                -2535066.123591787,
+                                4505993.45120897,
+                                3722772.447572634
+                              ),
+                              new Cesium.Cartesian3(
+                                -2540458.3485641703,
+                                4503067.228785423,
+                                3722632.322980046
+                              ),
+                            ],
+                            [
+                              new Cesium.PolygonHierarchy([
+                                new Cesium.Cartesian3(
+                                  -2536474.189935819,
+                                  4501905.832752764,
+                                  3726702.446914689
+                                ),
+                                new Cesium.Cartesian3(
+                                  -2538685.0789317423,
+                                  4503589.565569528,
+                                  3723193.8093042574
+                                ),
+                                new Cesium.Cartesian3(
+                                  -2536190.002176711,
+                                  4504973.396416775,
+                                  3723235.9367852425
+                                ),
+                              ]),
+                            ]
+                          ),
+                        ]
+                      ),
+                    ]
+                  ),
+                ],
+              });
+            },
+          },
+        ];
+        Sandcastle.addToolbarMenu(typeOptions);
+
+        //Sandcastle_End
+        Sandcastle.finishedLoading();
+      };
+      if (typeof Cesium !== "undefined") {
+        window.startupCalled = true;
+        window.startup(Cesium);
+      }
+    </script>
+  </body>
+</html>

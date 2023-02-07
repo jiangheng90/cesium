@@ -80,18 +80,98 @@
         const tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset({
             url:
-              "http://intenal.geoway-atlas.com:31080/ime-cloud/rest/jm_a01/3dtiles/tileset.json",
+              "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/qx_zhucheng_ktx2/3dtiles/tileset.json",
             useVisibleByDistanceToCamera: true,
             isGeoway3DTileset: true,
             needUpdate: false,
             skipLevelOfDetail: true,
-            // maskProvider: new Cesium.VectorTileMaskProvider({
-            //   url:
-            //     "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
-            //   proxy: "http://172.16.67.26:7777/getMap",
-            //   maximumLevel: 20,
-            //   styleId: "ws",
-            // }),
+            maskProvider: new Cesium.PolygonMaskProvider({
+              hierarchies: [
+                new Cesium.PolygonHierarchy(
+                  [
+                    new Cesium.Cartesian3(
+                      -2534502.4503949177,
+                      4497017.087342292,
+                      3733888.877145117
+                    ),
+                    new Cesium.Cartesian3(
+                      -2532103.599985605,
+                      4508894.151723428,
+                      3721104.282256185
+                    ),
+                    new Cesium.Cartesian3(
+                      -2542625.8613830926,
+                      4502502.524167168,
+                      3721673.172855103
+                    ),
+                  ],
+                  [
+                    new Cesium.PolygonHierarchy(
+                      [
+                        new Cesium.Cartesian3(
+                          -2541267.958902957,
+                          4502906.679998857,
+                          3722308.640856004
+                        ),
+                        new Cesium.Cartesian3(
+                          -2534268.3362733712,
+                          4506693.746605615,
+                          3722465.371890358
+                        ),
+                        new Cesium.Cartesian3(
+                          -2535310.2646393697,
+                          4499564.567633204,
+                          3730273.518173729
+                        ),
+                      ],
+                      [
+                        new Cesium.PolygonHierarchy(
+                          [
+                            new Cesium.Cartesian3(
+                              -2535796.952030279,
+                              4500617.833560709,
+                              3728719.0890152166
+                            ),
+                            new Cesium.Cartesian3(
+                              -2535066.123591787,
+                              4505993.45120897,
+                              3722772.447572634
+                            ),
+                            new Cesium.Cartesian3(
+                              -2540458.3485641703,
+                              4503067.228785423,
+                              3722632.322980046
+                            ),
+                          ],
+                          [
+                            new Cesium.PolygonHierarchy([
+                              new Cesium.Cartesian3(
+                                -2536474.189935819,
+                                4501905.832752764,
+                                3726702.446914689
+                              ),
+                              new Cesium.Cartesian3(
+                                -2538685.0789317423,
+                                4503589.565569528,
+                                3723193.8093042574
+                              ),
+                              new Cesium.Cartesian3(
+                                -2536190.002176711,
+                                4504973.396416775,
+                                3723235.9367852425
+                              ),
+                            ]),
+                          ]
+                        ),
+                      ]
+                    ),
+                  ]
+                ),
+              ],
+            }),
+            //             (-2534502.4503949177, 4497017.087342292, 3733888.877145117)
+            // (-2532103.599985605, 4508894.151723428, 3721104.282256185)
+            // (-2542625.8613830926, 4502502.524167168, 3721673.172855103)
             customShader: new Cesium.CustomShader({
               lightingModel: Cesium.LightingModel.UNLIT,
               fragmentShaderText: `
@@ -109,16 +189,38 @@
               }
               `,
             }),
-            // globalScreenSpaceErrorFactor: 2,
           })
         );
         viewer.zoomTo(tileset);
 
-        // const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-        // handler.setInputAction(function (movement) {
-        //   const pickedObject = viewer.scene.pick(movement.position);
-        //   console.log(pickedObject)
-        // }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+        // setTimeout(() => {
+        //   tileset.maskProvider = new Cesium.VectorTileMaskProvider({
+        //     url:
+        //       "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zhucheng_sjx/export",
+        //     proxy: "http://172.16.67.26:7777/getMap",
+        //     maximumLevel: 20,
+        //     styleId: "ws",
+        //   });
+        //   setTimeout(() => {
+        //     tileset.maskProvider = new Cesium.VectorTileMaskProvider({
+        //       url:
+        //         "http://intenal.geoway-atlas.com:31280/mapserver/vmap/zc_polygon2/export",
+        //       proxy: "http://172.16.67.26:7777/getMap",
+        //       maximumLevel: 20,
+        //       styleId: "ws",
+        //     });
+        //   }, 10000);
+        // }, 10000);
+
+        const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        handler.setInputAction(function (movement) {
+          // const pickedObject = viewer.scene.pick(movement.position);
+          // console.log(pickedObject)
+          console.log(viewer.scene.pickPosition(movement.position));
+          const location = Cesium.Cartographic.fromCartesian(
+            viewer.scene.pickPosition(movement.position)
+          );
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
         //Sandcastle_End
         Sandcastle.finishedLoading();

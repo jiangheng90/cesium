@@ -1,122 +1,15 @@
 // GW-ADD
-import Cartesian3 from "./Cartesian3.js";
-import Cartographic from "./Cartographic.js";
-import Color from "./Color.js";
-import defaultValue from "./defaultValue.js";
-import defined from "./defined.js";
-import Event from "./Event.js";
-import GeographicTilingScheme from "./GeographicTilingScheme.js";
-import PolygonHierarchy from "./PolygonHierarchy.js";
-import Rectangle from "./Rectangle.js";
-import MaskType from "../Scene/MaskType.js";
-
-/**
- *
- * @param {Cartographic} position
- * @param {Rectangle} rectangle
- * @param {number} tileWidth
- * @param {number} tileHeight
- *
- * @returns {{x: number, y: number}} result
- */
-function project(position, rectangle, tileWidth, tileHeight) {
-  const { west, south, east, north } = rectangle;
-  const { longitude, latitude } = position;
-  const startX = west;
-  const x = ((longitude - startX) / Math.abs(east - west)) * tileWidth;
-  const startY = north;
-  const y = (-(latitude - startY) / Math.abs(south - north)) * tileHeight;
-  return { x, y };
-}
-
-/**
- * @alias HierarchyElement
- * @constructor
- *
- */
-function HierarchyElement() {
-  /**
-   * @type {Cartographic[]|undefined}
-   * @default undefined
-   */
-  this.positions = undefined;
-
-  /**
-   * @type {HierarchyElement[]|undefined}
-   * @default undefined
-   */
-  this.holes = undefined;
-}
-
-/**
- *
- * @param {PolygonHierarchy[]} hierarchies
- * @param {Cartesian3[]} occupiedLocations
- *
- * @returns {HierarchyElement}
- */
-function convertHierarchies(hierarchies, occupiedLocations) {
-  const result = [];
-  hierarchies.forEach((hierarchy) => {
-    const hierarchyElement = new HierarchyElement();
-    const { holes, positions } = hierarchy;
-    if (positions.length > 0) {
-      hierarchyElement.positions = positions.map((position) => {
-        occupiedLocations.push(position);
-        const p = Cartographic.fromCartesian(position);
-        p.height = 0;
-        return p;
-      });
-    }
-    if (holes.length > 0) {
-      hierarchyElement.holes = convertHierarchies(holes, occupiedLocations);
-    }
-    result.push(hierarchyElement);
-  });
-  return result;
-}
-
-/**
- *
- * @param {CanvasRenderingContext2D} context
- * @param {HierarchyElement[]} hierarchies
- * @param {Rectangle} rectangle
- * @param {number} tileWidth
- * @param {number} tileHeight
- * @param {boolean} hole
- *
- * @returns {void}
- */
-function drawPolygonHierarchies(
-  context,
-  hierarchies,
-  rectangle,
-  tileWidth,
-  tileHeight,
-  hole
-) {
-  hierarchies.forEach((hierarchy) => {
-    const { holes, positions } = hierarchy;
-    if (positions) {
-      positions.forEach((position, i) => {
-        const { x, y } = project(position, rectangle, tileWidth, tileHeight);
-        const method = i === 0 ? "moveTo" : "lineTo";
-        context[method](x, y);
-      });
-    }
-
-    if (holes) {
-      drawPolygonHierarchies(
-        context,
-        holes,
-        rectangle,
-        tileWidth,
-        tileHeight,
-        !hole
-      );
-    }
-  });
-}
+import Cartesian3 from "../Core/Cartesian3.js";
+import Color from "../Core/Color.js";
+import defaultValue from "../Core/defaultValue.js";
+import defined from "../Core/defined.js";
+import Event from "../Core/Event.js";
+import GeographicTilingScheme from "../Core/GeographicTilingScheme.js";
+import PolygonHierarchy from "../Core/PolygonHierarchy.js";
+import Rectangle from "../Core/Rectangle.js";
+import MaskType from "./MaskType.js";
+import convertHierarchies from "../Core/convertHierarchies.js";
+import drawPolygonHierarchies from "../Core/drawPolygonHierarchies.js";
 
 /**
  *

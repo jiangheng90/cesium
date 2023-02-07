@@ -1604,6 +1604,9 @@ Object.defineProperties(Model.prototype, {
       return this._mask;
     },
     set: function (value) {
+      if (this._mask) {
+        this._mask.destroy();
+      }
       this._mask = value;
     },
   },
@@ -2279,6 +2282,7 @@ function updateMask(model, frameState) {
   if (!model.maskProviderDirty || !(model._rectangle instanceof Rectangle)) {
     return;
   }
+  const context = frameState.context;
   if (model.maskProvider) {
     const east = CesiumMath.toDegrees(model._rectangle.east);
     const west = CesiumMath.toDegrees(model._rectangle.west);
@@ -2287,10 +2291,10 @@ function updateMask(model, frameState) {
 
     const request = new Request();
 
-    model._mask = new ModelMaskLayer(frameState.context, model.maskProvider);
-    model._mask._requestImagery(west, south, east, north, request);
+    model.mask = new ModelMaskLayer(context, model.maskProvider);
+    model.mask._requestImagery(west, south, east, north, request);
   } else {
-    model._mask = new ModelMaskLayer(frameState.context);
+    model.mask = new ModelMaskLayer(context);
   }
   model.maskProviderDirty = false;
 }

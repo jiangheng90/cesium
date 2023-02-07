@@ -1,10 +1,10 @@
-import defaultValue from "../../Core/defaultValue.js";
-import defined from "../../Core/defined.js";
-import DeveloperError from "../../Core/DeveloperError.js";
-import Event from "../../Core/Event.js";
-import Rectangle from "../../Core/Rectangle.js";
-import Resource from "../../Core/Resource.js";
-import ImageryProvider from "../ImageryProvider.js";
+import defaultValue from "../Core/defaultValue.js";
+import defined from "../Core/defined.js";
+import DeveloperError from "../Core/DeveloperError.js";
+import Event from "../Core/Event.js";
+import Rectangle from "../Core/Rectangle.js";
+import Resource from "../Core/Resource.js";
+import ImageryProvider from "./ImageryProvider.js";
 
 /**
  *

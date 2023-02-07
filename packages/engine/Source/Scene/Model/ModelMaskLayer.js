@@ -152,4 +152,10 @@ ModelMaskLayer.prototype._createTextureWebGL = function (image) {
   });
 };
 
+ModelMaskLayer.prototype.destroy = function () {
+  if (this.texture !== this._context.defaultEmptyTexture) {
+    this.texture.destroy();
+  }
+};
+
 export default ModelMaskLayer;
