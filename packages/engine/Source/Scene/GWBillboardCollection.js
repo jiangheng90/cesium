@@ -96,7 +96,7 @@ const attributeLocationsInstanced = {
  * images positioned in the 3D scene.
  * <br /><br />
  * <div align='center'>
- * <img src='Images/Billboard.png' width='400' height='300' /><br />
+ * <img src='Images/GWBillboard.png' width='400' height='300' /><br />
  * Example billboards
  * </div>
  * <br /><br />
@@ -124,14 +124,14 @@ const attributeLocationsInstanced = {
  *
  * @see GWBillboardCollection#add
  * @see GWBillboardCollection#remove
- * @see Billboard
+ * @see GWBillboard
  * @see LabelCollection
  *
- * @demo {@link https://sandcastle.cesium.com/index.html?src=Billboards.html|Cesium Sandcastle Billboard Demo}
+ * @demo {@link https://sandcastle.cesium.com/index.html?src=Billboards.html|Cesium Sandcastle GWBillboard Demo}
  *
  * @example
  * // Create a billboard collection with two billboards
- * const billboards = scene.primitives.add(new Cesium.BillboardCollection());
+ * const billboards = scene.primitives.add(new Cesium.GWBillboardCollection());
  * billboards.add({
  *   position : new Cesium.Cartesian3(1.0, 2.0, 3.0),
  *   image : 'url/to/image'
@@ -269,7 +269,7 @@ function GWBillboardCollection(options) {
   /**
    * This property is for debugging only; it is not for production use nor is it optimized.
    * <p>
-   * Draws the texture atlas for this BillboardCollection as a fullscreen quad.
+   * Draws the texture atlas for this GWBillboardCollection as a fullscreen quad.
    * </p>
    *
    * @type {Boolean}
@@ -351,7 +351,7 @@ Object.defineProperties(GWBillboardCollection.prototype, {
    * Returns the number of billboards in this collection.  This is commonly used with
    * {@link GWBillboardCollection#get} to iterate over all the billboards
    * in the collection.
-   * @memberof BillboardCollection.prototype
+   * @memberof GWBillboardCollection.prototype
    * @type {Number}
    */
   length: {
@@ -384,7 +384,7 @@ Object.defineProperties(GWBillboardCollection.prototype, {
 
   /**
    * Gets or sets the textureAtlas.
-   * @memberof BillboardCollection.prototype
+   * @memberof GWBillboardCollection.prototype
    * @type {TextureAtlas}
    * @private
    */
@@ -411,7 +411,7 @@ Object.defineProperties(GWBillboardCollection.prototype, {
    * If the texture atlas is used by more than one collection, set this to <code>false</code>,
    * and explicitly destroy the atlas to avoid attempting to destroy it multiple times.
    *
-   * @memberof BillboardCollection.prototype
+   * @memberof GWBillboardCollection.prototype
    * @type {Boolean}
    * @private
    *
@@ -452,7 +452,7 @@ function destroyBillboards(billboards) {
  * The added billboard is returned so it can be modified or removed from the collection later.
  *
  * @param {Object}[options] A template describing the billboard's properties as shown in Example 1.
- * @returns {Billboard} The billboard that was added to the collection.
+ * @returns {GWBillboard} The billboard that was added to the collection.
  *
  * @performance Calling <code>add</code> is expected constant time.  However, the collection's vertex buffer
  * is rewritten - an <code>O(n)</code> operation that also incurs CPU to GPU overhead.  For
@@ -509,14 +509,14 @@ GWBillboardCollection.prototype.add = function (options) {
 /**
  * Removes a billboard from the collection.
  *
- * @param {Billboard} billboard The billboard to remove.
+ * @param {GWBillboard} billboard The billboard to remove.
  * @returns {Boolean} <code>true</code> if the billboard was removed; <code>false</code> if the billboard was not found in the collection.
  *
  * @performance Calling <code>remove</code> is expected constant time.  However, the collection's vertex buffer
  * is rewritten - an <code>O(n)</code> operation that also incurs CPU to GPU overhead.  For
  * best performance, remove as many billboards as possible before calling <code>update</code>.
  * If you intend to temporarily hide a billboard, it is usually more efficient to call
- * {@link Billboard#show} instead of removing and re-adding the billboard.
+ * {@link GWBillboard#show} instead of removing and re-adding the billboard.
  *
  * @exception {DeveloperError} This object was destroyed, i.e., destroy() was called.
  *
@@ -527,7 +527,7 @@ GWBillboardCollection.prototype.add = function (options) {
  *
  * @see GWBillboardCollection#add
  * @see GWBillboardCollection#removeAll
- * @see Billboard#show
+ * @see GWBillboard#show
  */
 GWBillboardCollection.prototype.remove = function (billboard) {
   if (this.contains(billboard)) {
@@ -601,7 +601,7 @@ GWBillboardCollection.prototype._updateBillboard = function (
 /**
  * Check whether this collection contains a given billboard.
  *
- * @param {Billboard} [billboard] The billboard to check for.
+ * @param {GWBillboard} [billboard] The billboard to check for.
  * @returns {Boolean} true if this collection contains the billboard, false otherwise.
  *
  * @see GWBillboardCollection#get
@@ -618,7 +618,7 @@ GWBillboardCollection.prototype.contains = function (billboard) {
  * in the collection.
  *
  * @param {Number} index The zero-based index of the billboard.
- * @returns {Billboard} The billboard at the specified index.
+ * @returns {GWBillboard} The billboard at the specified index.
  *
  * @performance Expected constant time.  If billboards were removed from the collection and
  * {@link GWBillboardCollection#update} was not called, an implicit <code>O(n)</code>

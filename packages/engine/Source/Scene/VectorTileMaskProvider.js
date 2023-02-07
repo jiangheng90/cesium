@@ -123,7 +123,6 @@ const scratchRectangle = new Rectangle();
  * @param {Number} south
  * @param {Number} east
  * @param {Number} north
- * @param {Number} north
  *
  */
 function getLevel(provider, west, south, east, north) {

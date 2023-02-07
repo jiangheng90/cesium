@@ -25,13 +25,13 @@ const compositeColor = new Color();
 /**
  * <div class="notice">
  * A billboard is created and its initial
- * properties are set by calling {@link BillboardCollection#add}. Do not call the constructor directly.
+ * properties are set by calling {@link GWBillboardCollection#add}. Do not call the constructor directly.
  * </div>
  * A viewport-aligned image positioned in the 3D scene, that is created
- * and rendered using a {@link BillboardCollection}.
+ * and rendered using a {@link GWBillboardCollection}.
  * <br /><br />
  * <div align='center'>
- * <img src='Images/Billboard.png' width='400' height='300' /><br />
+ * <img src='Images/GWBillboard.png' width='400' height='300' /><br />
  * Example billboards
  * </div>
  *
@@ -39,9 +39,9 @@ const compositeColor = new Color();
  *
  * @performance Reading a property, e.g., {@link GWBillboard#show}, is constant time.
  * Assigning to a property is constant time but results in
- * CPU to GPU traffic when {@link BillboardCollection#update} is called.  The per-billboard traffic is
+ * CPU to GPU traffic when {@link GWBillboardCollection#update} is called.  The per-billboard traffic is
  * the same regardless of how many properties were updated.  If most billboards in a collection need to be
- * updated, it may be more efficient to clear the collection with {@link BillboardCollection#removeAll}
+ * updated, it may be more efficient to clear the collection with {@link GWBillboardCollection#removeAll}
  * and add new billboards instead of modifying each one.
  *
  * @exception {DeveloperError} scaleByDistance.far must be greater than scaleByDistance.near
@@ -49,14 +49,14 @@ const compositeColor = new Color();
  * @exception {DeveloperError} pixelOffsetScaleByDistance.far must be greater than pixelOffsetScaleByDistance.near
  * @exception {DeveloperError} distanceDisplayCondition.far must be greater than distanceDisplayCondition.near
  *
- * @see BillboardCollection
- * @see BillboardCollection#add
+ * @see GWBillboardCollection
+ * @see GWBillboardCollection#add
  * @see Label
  *
  * @internalConstructor
  * @class
  *
- * @demo {@link https://sandcastle.cesium.com/index.html?src=Billboards.html|Cesium Sandcastle Billboard Demo}
+ * @demo {@link https://sandcastle.cesium.com/index.html?src=Billboards.html|Cesium Sandcastle GWBillboard Demo}
  */
 function GWBillboard(options, billboardCollection) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
@@ -172,8 +172,8 @@ function GWBillboard(options, billboardCollection) {
   this._pickPrimitive = defaultValue(options._pickPrimitive, this);
   this._billboardCollection = billboardCollection;
   this._dirty = false;
-  this._index = -1; //Used only by BillboardCollection
-  this._batchIndex = undefined; // Used only by Vector3DTilePoints and BillboardCollection
+  this._index = -1; //Used only by GWBillboardCollection
+  this._batchIndex = undefined; // Used only by Vector3DTilePoints and GWBillboardCollection
 
   this._imageIndex = -1;
   this._imageIndexPromise = undefined;
@@ -271,7 +271,7 @@ Object.defineProperties(GWBillboard.prototype, {
   /**
    * Determines if this billboard will be shown.  Use this to hide or show a billboard, instead
    * of removing it and re-adding it to the collection.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Boolean}
    * @default true
    */
@@ -293,7 +293,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets the Cartesian position of this billboard.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Cartesian3}
    */
   position: {
@@ -317,7 +317,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets the height reference of this billboard.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {HeightReference}
    * @default HeightReference.NONE
    */
@@ -347,12 +347,12 @@ Object.defineProperties(GWBillboard.prototype, {
    * <br /><br />
    * <div align='center'>
    * <table border='0' cellpadding='5'><tr>
-   * <td align='center'><code>default</code><br/><img src='Images/Billboard.setPixelOffset.default.png' width='250' height='188' /></td>
-   * <td align='center'><code>b.pixeloffset = new Cartesian2(50, 25);</code><br/><img src='Images/Billboard.setPixelOffset.x50y-25.png' width='250' height='188' /></td>
+   * <td align='center'><code>default</code><br/><img src='Images/GWBillboard.setPixelOffset.default.png' width='250' height='188' /></td>
+   * <td align='center'><code>b.pixeloffset = new Cartesian2(50, 25);</code><br/><img src='Images/GWBillboard.setPixelOffset.x50y-25.png' width='250' height='188' /></td>
    * </tr></table>
    * The billboard's origin is indicated by the yellow point.
    * </div>
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Cartesian2}
    */
   pixelOffset: {
@@ -373,13 +373,13 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * Gets or sets near and far scaling properties of a Billboard based on the billboard's distance from the camera.
+   * Gets or sets near and far scaling properties of a GWBillboard based on the billboard's distance from the camera.
    * A billboard's scale will interpolate between the {@link NearFarScalar#nearValue} and
    * {@link NearFarScalar#farValue} while the camera distance falls within the lower and upper bounds
    * of the specified {@link NearFarScalar#near} and {@link NearFarScalar#far}.
    * Outside of these ranges the billboard's scale remains clamped to the nearest bound.  If undefined,
    * scaleByDistance will be disabled.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {NearFarScalar}
    *
    * @example
@@ -419,13 +419,13 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * Gets or sets near and far translucency properties of a Billboard based on the billboard's distance from the camera.
+   * Gets or sets near and far translucency properties of a GWBillboard based on the billboard's distance from the camera.
    * A billboard's translucency will interpolate between the {@link NearFarScalar#nearValue} and
    * {@link NearFarScalar#farValue} while the camera distance falls within the lower and upper bounds
    * of the specified {@link NearFarScalar#near} and {@link NearFarScalar#far}.
    * Outside of these ranges the billboard's translucency remains clamped to the nearest bound.  If undefined,
    * translucencyByDistance will be disabled.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {NearFarScalar}
    *
    * @example
@@ -468,13 +468,13 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * Gets or sets near and far pixel offset scaling properties of a Billboard based on the billboard's distance from the camera.
+   * Gets or sets near and far pixel offset scaling properties of a GWBillboard based on the billboard's distance from the camera.
    * A billboard's pixel offset will be scaled between the {@link NearFarScalar#nearValue} and
    * {@link NearFarScalar#farValue} while the camera distance falls within the lower and upper bounds
    * of the specified {@link NearFarScalar#near} and {@link NearFarScalar#far}.
    * Outside of these ranges the billboard's pixel offset scale remains clamped to the nearest bound.  If undefined,
    * pixelOffsetScaleByDistance will be disabled.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {NearFarScalar}
    *
    * @example
@@ -531,12 +531,12 @@ Object.defineProperties(GWBillboard.prototype, {
    * <br /><br />
    * <div align='center'>
    * <table border='0' cellpadding='5'><tr>
-   * <td align='center'><img src='Images/Billboard.setEyeOffset.one.png' width='250' height='188' /></td>
-   * <td align='center'><img src='Images/Billboard.setEyeOffset.two.png' width='250' height='188' /></td>
+   * <td align='center'><img src='Images/GWBillboard.setEyeOffset.one.png' width='250' height='188' /></td>
+   * <td align='center'><img src='Images/GWBillboard.setEyeOffset.two.png' width='250' height='188' /></td>
    * </tr></table>
    * <code>b.eyeOffset = new Cartesian3(0.0, 8000000.0, 0.0);</code><br /><br />
    * </div>
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Cartesian3}
    */
   eyeOffset: {
@@ -561,9 +561,9 @@ Object.defineProperties(GWBillboard.prototype, {
    * to the left, center, or right of its anchor position.
    * <br /><br />
    * <div align='center'>
-   * <img src='Images/Billboard.setHorizontalOrigin.png' width='648' height='196' /><br />
+   * <img src='Images/GWBillboard.setHorizontalOrigin.png' width='648' height='196' /><br />
    * </div>
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {HorizontalOrigin}
    * @example
    * // Use a bottom, left origin
@@ -591,9 +591,9 @@ Object.defineProperties(GWBillboard.prototype, {
    * to the above, below, or at the center of its anchor position.
    * <br /><br />
    * <div align='center'>
-   * <img src='Images/Billboard.setVerticalOrigin.png' width='695' height='175' /><br />
+   * <img src='Images/GWBillboard.setVerticalOrigin.png' width='695' height='175' /><br />
    * </div>
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {VerticalOrigin}
    * @example
    * // Use a bottom, left origin
@@ -623,11 +623,11 @@ Object.defineProperties(GWBillboard.prototype, {
    * the billboard.
    * <br /><br />
    * <div align='center'>
-   * <img src='Images/Billboard.setScale.png' width='400' height='300' /><br/>
+   * <img src='Images/GWBillboard.setScale.png' width='400' height='300' /><br/>
    * From left to right in the above image, the scales are <code>0.5</code>, <code>1.0</code>,
    * and <code>2.0</code>.
    * </div>
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   scale: {
@@ -654,15 +654,15 @@ Object.defineProperties(GWBillboard.prototype, {
    * <br /><br />
    * <div align='center'>
    * <table border='0' cellpadding='5'><tr>
-   * <td align='center'><code>default</code><br/><img src='Images/Billboard.setColor.Alpha255.png' width='250' height='188' /></td>
-   * <td align='center'><code>alpha : 0.5</code><br/><img src='Images/Billboard.setColor.Alpha127.png' width='250' height='188' /></td>
+   * <td align='center'><code>default</code><br/><img src='Images/GWBillboard.setColor.Alpha255.png' width='250' height='188' /></td>
+   * <td align='center'><code>alpha : 0.5</code><br/><img src='Images/GWBillboard.setColor.Alpha127.png' width='250' height='188' /></td>
    * </tr></table>
    * </div>
    * <br />
    * The red, green, blue, and alpha values are indicated by <code>value</code>'s <code>red</code>, <code>green</code>,
    * <code>blue</code>, and <code>alpha</code> properties as shown in Example 1.  These components range from <code>0.0</code>
    * (no intensity) to <code>1.0</code> (full intensity).
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Color}
    *
    * @example
@@ -716,7 +716,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets the rotation angle in radians.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   rotation: {
@@ -738,7 +738,7 @@ Object.defineProperties(GWBillboard.prototype, {
   /**
    * Gets or sets the aligned axis in world space. The aligned axis is the unit vector that the billboard up vector points towards.
    * The default is the zero vector, which means the billboard is aligned to the screen up vector.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Cartesian3}
    * @example
    * // Example 1.
@@ -775,7 +775,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets a width for the billboard. If undefined, the image width will be used.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   width: {
@@ -797,7 +797,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets a height for the billboard. If undefined, the image height will be used.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   height: {
@@ -820,7 +820,7 @@ Object.defineProperties(GWBillboard.prototype, {
   /**
    * Gets or sets if the billboard size is in meters or pixels. <code>true</code> to size the billboard in meters;
    * otherwise, the size is in pixels.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Boolean}
    * @default false
    */
@@ -841,7 +841,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets the condition specifying at what distance from the camera that this billboard will be displayed.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {DistanceDisplayCondition}
    * @default undefined
    */
@@ -875,7 +875,7 @@ Object.defineProperties(GWBillboard.prototype, {
   /**
    * Gets or sets the distance from the camera at which to disable the depth test to, for example, prevent clipping against terrain.
    * When set to zero, the depth test is always applied. When set to Number.POSITIVE_INFINITY, the depth test is never applied.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   disableDepthTestDistance: {
@@ -902,7 +902,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Gets or sets the user-defined object returned when the billboard is picked.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Object}
    */
   id: {
@@ -918,7 +918,7 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Number}
    */
   animation: {
@@ -957,7 +957,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * The primitive to return when picking this billboard.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @private
    */
   pickPrimitive: {
@@ -991,7 +991,7 @@ Object.defineProperties(GWBillboard.prototype, {
    * a canvas, or another billboard's image property (from the same billboard collection).
    * </p>
    *
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {String}
    * @example
    * // load an image from a URL
@@ -1029,7 +1029,7 @@ Object.defineProperties(GWBillboard.prototype, {
    * When <code>true</code>, this billboard is ready to render, i.e., the image
    * has been downloaded and the WebGL resources are created.
    *
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    *
    * @type {Boolean}
    * @readonly
@@ -1044,7 +1044,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Keeps track of the position of the billboard based on the height reference.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Cartesian3}
    * @private
    */
@@ -1063,7 +1063,7 @@ Object.defineProperties(GWBillboard.prototype, {
 
   /**
    * Determines whether or not this billboard will be shown or hidden because it was clustered.
-   * @memberof Billboard.prototype
+   * @memberof GWBillboard.prototype
    * @type {Boolean}
    * @private
    */
@@ -1080,8 +1080,8 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * The outline color of this Billboard.  Effective only for SDF billboards like Label glyphs.
-   * @memberof Billboard.prototype
+   * The outline color of this GWBillboard.  Effective only for SDF billboards like Label glyphs.
+   * @memberof GWBillboard.prototype
    * @type {Color}
    * @private
    */
@@ -1105,8 +1105,8 @@ Object.defineProperties(GWBillboard.prototype, {
   },
 
   /**
-   * The outline width of this Billboard in pixels.  Effective only for SDF billboards like Label glyphs.
-   * @memberof Billboard.prototype
+   * The outline width of this GWBillboard in pixels.  Effective only for SDF billboards like Label glyphs.
+   * @memberof GWBillboard.prototype
    * @type {Number}
    * @private
    */
@@ -1470,7 +1470,7 @@ const scratchPixelOffset = new Cartesian2(0.0, 0.0);
  * @param {Cartesian2} [result] The object onto which to store the result.
  * @returns {Cartesian2} The screen-space position of the billboard.
  *
- * @exception {DeveloperError} Billboard must be in a collection.
+ * @exception {DeveloperError} GWBillboard must be in a collection.
  *
  * @example
  * console.log(b.computeScreenSpacePosition(scene).toString());
@@ -1487,7 +1487,7 @@ GWBillboard.prototype.computeScreenSpacePosition = function (scene, result) {
   //>>includeStart('debug', pragmas.debug);
   if (!defined(billboardCollection)) {
     throw new DeveloperError(
-      "Billboard must be in a collection.  Was it removed?"
+      "GWBillboard must be in a collection.  Was it removed?"
     );
   }
   if (!defined(scene)) {
@@ -1641,7 +1641,7 @@ GWBillboard.prototype.resetHidden = function () {
 
 /**
  * A function that creates an image.
- * @callback Billboard.CreateImageCallback
+ * @callback GWBillboard.CreateImageCallback
  * @param {String} id The identifier of the image to load.
  * @returns {HTMLImageElement|HTMLCanvasElement|Promise<HTMLImageElement|HTMLCanvasElement>} The image, or a promise that will resolve to an image.
  */
