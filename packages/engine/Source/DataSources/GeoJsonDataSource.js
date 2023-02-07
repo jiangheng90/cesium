@@ -34,6 +34,9 @@ const crsNames = {
   "urn:ogc:def:crs:OGC:1.3:CRS84": defaultCrsFunction,
   "EPSG:4326": defaultCrsFunction,
   "urn:ogc:def:crs:EPSG::4326": defaultCrsFunction,
+  // GW-ADD
+  "urn:ogc:def:crs:EPSG::4490": defaultCrsFunction,
+  // GW-ADD
 };
 
 const crsLinkHrefs = {};
