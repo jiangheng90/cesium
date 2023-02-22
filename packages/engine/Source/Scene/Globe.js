@@ -89,7 +89,7 @@ function Globe(ellipsoid) {
   /**
    * Determines if the globe will be shown.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.show = true;
@@ -103,7 +103,7 @@ function Globe(ellipsoid) {
    * The maximum screen-space error used to drive level-of-detail refinement.  Higher
    * values will provide better performance but lower visual quality.
    *
-   * @type {Number}
+   * @type {number}
    * @default 2
    */
   this.maximumScreenSpaceError = 2;
@@ -114,7 +114,7 @@ function Globe(ellipsoid) {
    * this frame.  A larger number will consume more memory but will show detail faster
    * when, for example, zooming out and then back in.
    *
-   * @type {Number}
+   * @type {number}
    * @default 100
    */
   this.tileCacheSize = 100;
@@ -127,7 +127,7 @@ function Globe(ellipsoid) {
    * tile level to be loaded successively, significantly increasing load time. Setting it to a large
    * number (e.g. 1000) will minimize the number of tiles that are loaded but tend to make
    * detail appear all at once after a long wait.
-   * @type {Number}
+   * @type {number}
    * @default 20
    */
   this.loadingDescendantLimit = 20;
@@ -136,7 +136,7 @@ function Globe(ellipsoid) {
    * Gets or sets a value indicating whether the ancestors of rendered tiles should be preloaded.
    * Setting this to true optimizes the zoom-out experience and provides more detail in
    * newly-exposed areas when panning. The down side is that it requires loading more tiles.
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   /* GW-UPDATE
@@ -150,7 +150,7 @@ function Globe(ellipsoid) {
    * Setting this to true causes tiles with the same parent as a rendered tile to be loaded, even
    * if they are culled. Setting this to true may provide a better panning experience at the
    * cost of loading more tiles.
-   * @type {Boolean}
+   * @type {boolean}
    * @default false
    */
   this.preloadSiblings = false;
@@ -168,7 +168,7 @@ function Globe(ellipsoid) {
   /**
    * Enable lighting the globe with the scene's light source.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default false
    */
   this.enableLighting = false;
@@ -178,7 +178,7 @@ function Globe(ellipsoid) {
    * This number is multiplied by the result of <code>czm_getLambertDiffuse</code> in GlobeFS.glsl.
    * This only takes effect when <code>enableLighting</code> is <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 0.9
    */
   this.lambertDiffuseMultiplier = 0.9;
@@ -187,7 +187,7 @@ function Globe(ellipsoid) {
    * Enable dynamic lighting effects on atmosphere and fog. This only takes effect
    * when <code>enableLighting</code> is <code>true</code>.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.dynamicAtmosphereLighting = true;
@@ -197,7 +197,7 @@ function Globe(ellipsoid) {
    * light direction. This only takes effect when <code>enableLighting</code> and
    * <code>dynamicAtmosphereLighting</code> are <code>true</code>.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default false
    */
   this.dynamicAtmosphereLightingFromSun = false;
@@ -205,7 +205,7 @@ function Globe(ellipsoid) {
   /**
    * Enable the ground atmosphere, which is drawn over the globe when viewed from a distance between <code>lightingFadeInDistance</code> and <code>lightingFadeOutDistance</code>.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.showGroundAtmosphere = true;
@@ -213,7 +213,7 @@ function Globe(ellipsoid) {
   /**
    * The intensity of the light that is used for computing the ground atmosphere color.
    *
-   * @type {Number}
+   * @type {number}
    * @default 10.0
    */
   this.atmosphereLightIntensity = 10.0;
@@ -237,7 +237,7 @@ function Globe(ellipsoid) {
   /**
    * The Rayleigh scale height used in the atmospheric scattering equations for the ground atmosphere, in meters.
    *
-   * @type {Number}
+   * @type {number}
    * @default 10000.0
    */
   this.atmosphereRayleighScaleHeight = 10000.0;
@@ -245,7 +245,7 @@ function Globe(ellipsoid) {
   /**
    * The Mie scale height used in the atmospheric scattering equations for the ground atmosphere, in meters.
    *
-   * @type {Number}
+   * @type {number}
    * @default 3200.0
    */
   this.atmosphereMieScaleHeight = 3200.0;
@@ -255,7 +255,7 @@ function Globe(ellipsoid) {
    * <p>
    * Valid values are between -1.0 and 1.0.
    * </p>
-   * @type {Number}
+   * @type {number}
    * @default 0.9
    */
   this.atmosphereMieAnisotropy = 0.9;
@@ -264,7 +264,7 @@ function Globe(ellipsoid) {
    * The distance where everything becomes lit. This only takes effect
    * when <code>enableLighting</code> or <code>showGroundAtmosphere</code> is <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 10000000.0
    */
   this.lightingFadeOutDistance = 1.0e7;
@@ -273,7 +273,7 @@ function Globe(ellipsoid) {
    * The distance where lighting resumes. This only takes effect
    * when <code>enableLighting</code> or <code>showGroundAtmosphere</code> is <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 20000000.0
    */
   this.lightingFadeInDistance = 2.0e7;
@@ -283,7 +283,7 @@ function Globe(ellipsoid) {
    * This only takes effect when <code>showGroundAtmosphere</code>, <code>enableLighting</code>, and
    * <code>dynamicAtmosphereLighting</code> are <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 10000000.0
    */
   this.nightFadeOutDistance = 1.0e7;
@@ -293,7 +293,7 @@ function Globe(ellipsoid) {
    * This only takes effect when <code>showGroundAtmosphere</code>, <code>enableLighting</code>, and
    * <code>dynamicAtmosphereLighting</code> are <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 50000000.0
    */
   this.nightFadeInDistance = 5.0e7;
@@ -303,7 +303,7 @@ function Globe(ellipsoid) {
    * covered by water; otherwise, false.  This property is ignored if the
    * <code>terrainProvider</code> does not provide a water mask.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.showWaterEffect = true;
@@ -315,7 +315,7 @@ function Globe(ellipsoid) {
    * testing primitives against terrain is that slight numerical noise or terrain level-of-detail
    * switched can sometimes make a primitive that should be on the surface disappear underneath it.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default false
    *
    */
@@ -334,7 +334,7 @@ function Globe(ellipsoid) {
   /**
    * The hue shift to apply to the atmosphere. Defaults to 0.0 (no shift).
    * A hue shift of 1.0 indicates a complete rotation of the hues available.
-   * @type {Number}
+   * @type {number}
    * @default 0.0
    */
   this.atmosphereHueShift = 0.0;
@@ -342,7 +342,7 @@ function Globe(ellipsoid) {
   /**
    * The saturation shift to apply to the atmosphere. Defaults to 0.0 (no shift).
    * A saturation shift of -1.0 is monochrome.
-   * @type {Number}
+   * @type {number}
    * @default 0.0
    */
   this.atmosphereSaturationShift = 0.0;
@@ -350,7 +350,7 @@ function Globe(ellipsoid) {
   /**
    * The brightness shift to apply to the atmosphere. Defaults to 0.0 (no shift).
    * A brightness shift of -1.0 is complete darkness, which will let space show through.
-   * @type {Number}
+   * @type {number}
    * @default 0.0
    */
   this.atmosphereBrightnessShift = 0.0;
@@ -360,7 +360,7 @@ function Globe(ellipsoid) {
    * A value of <code>2.0</code> scales the terrain by 2x.
    * A value of <code>0.0</code> makes the terrain completely flat.
    * Note that terrain exaggeration will not modify any other primitive as they are positioned relative to the ellipsoid.
-   * @type {Number}
+   * @type {number}
    * @default 1.0
    */
   this.terrainExaggeration = 1.0;
@@ -370,7 +370,7 @@ function Globe(ellipsoid) {
    * Terrain that is above this height will scale upwards and terrain that is below this height will scale downwards.
    * Note that terrain exaggeration will not modify any other primitive as they are positioned relative to the ellipsoid.
    * If {@link Globe#terrainExaggeration} is <code>1.0</code> this value will have no effect.
-   * @type {Number}
+   * @type {number}
    * @default 0.0
    */
   this.terrainExaggerationRelativeHeight = 0.0;
@@ -379,7 +379,7 @@ function Globe(ellipsoid) {
    * Whether to show terrain skirts. Terrain skirts are geometry extending downwards from a tile's edges used to hide seams between neighboring tiles.
    * Skirts are always hidden when the camera is underground or translucency is enabled.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.showSkirts = true;
@@ -387,7 +387,7 @@ function Globe(ellipsoid) {
   /**
    * Whether to cull back-facing terrain. Back faces are not culled when the camera is underground or translucency is enabled.
    *
-   * @type {Boolean}
+   * @type {boolean}
    * @default true
    */
   this.backFaceCulling = true;
@@ -399,7 +399,7 @@ function Globe(ellipsoid) {
    * Determines the darkness of the vertex shadow.
    * This only takes effect when <code>enableLighting</code> is <code>true</code>.
    *
-   * @type {Number}
+   * @type {number}
    * @default 0.3
    */
   this.vertexShadowDarkness = 0.3;
@@ -456,7 +456,7 @@ Object.defineProperties(Globe.prototype, {
    * Returns <code>true</code> when the tile load queue is empty, <code>false</code> otherwise.  When the load queue is empty,
    * all terrain and imagery for the current view have been loaded.
    * @memberof Globe.prototype
-   * @type {Boolean}
+   * @type {boolean}
    * @readonly
    */
   tilesLoaded: {
@@ -522,7 +522,7 @@ Object.defineProperties(Globe.prototype, {
    * The normal map to use for rendering waves in the ocean.  Setting this property will
    * only have an effect if the configured terrain provider includes a water mask.
    * @memberof Globe.prototype
-   * @type {String}
+   * @type {string}
    * @default buildModuleUrl('Assets/Textures/waterNormalsSmall.jpg')
    */
   oceanNormalMapUrl: {
@@ -745,7 +745,7 @@ const scratchSphereIntersectionResult = {
  *
  * @param {Ray} ray The ray to test for intersection.
  * @param {Scene} scene The scene.
- * @param {Boolean} [cullBackFaces=true] Set to true to not pick back faces.
+ * @param {boolean} [cullBackFaces=true] Set to true to not pick back faces.
  * @param {Cartesian3} [result] The object onto which to store the result.
  * @returns {Cartesian3|undefined} The intersection or <code>undefined</code> if none was found.  The returned position is in projected coordinates for 2D and Columbus View.
  *
@@ -883,7 +883,7 @@ function tileIfContainsCartographic(tile, cartographic) {
  * Get the height of the surface at a given cartographic.
  *
  * @param {Cartographic} cartographic The cartographic for which to find the height.
- * @returns {Number|undefined} The height of the cartographic or undefined if it could not be found.
+ * @returns {number|undefined} The height of the cartographic or undefined if it could not be found.
  */
 Globe.prototype.getHeight = function (cartographic) {
   //>>includeStart('debug', pragmas.debug);
@@ -1146,7 +1146,7 @@ Globe.prototype.endFrame = function (frameState) {
  * If this object was destroyed, it should not be used; calling any function other than
  * <code>isDestroyed</code> will result in a {@link DeveloperError} exception.
  *
- * @returns {Boolean} True if this object was destroyed; otherwise, false.
+ * @returns {boolean} True if this object was destroyed; otherwise, false.
  *
  * @see Globe#destroy
  */
