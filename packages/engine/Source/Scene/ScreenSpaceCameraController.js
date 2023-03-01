@@ -224,6 +224,12 @@ function ScreenSpaceCameraController(scene) {
   this.minimumPickingTerrainHeight = 150000.0;
   this._minimumPickingTerrainHeight = this.minimumPickingTerrainHeight;
   /**
+   * The minimum distance the camera must be before testing for collision with terrain when zoom with inertia.
+   * @type {number}
+   * @default 4000.0
+   */
+  this.minimumPickingTerrainDistanceWithInertia = 4000.0;
+  /**
    * The minimum height the camera must be before testing for collision with terrain.
    * @type {number}
    * @default 15000.0
@@ -2163,6 +2169,8 @@ function pan3D(controller, startPosition, movement, ellipsoid) {
 const zoom3DUnitPosition = new Cartesian3();
 const zoom3DCartographic = new Cartographic();
 
+let preIntersectionDistance = 0;
+
 function zoom3D(controller, startPosition, movement) {
   if (defined(movement.distance)) {
     movement = movement.distance;
@@ -2194,10 +2202,12 @@ function zoom3D(controller, startPosition, movement) {
     zoom3DCartographic
   ).height;
 
-  const inertiaMovementApproachingGround = Math.abs(height) < 50;
+  const approachingCollision =
+    Math.abs(preIntersectionDistance) <
+    controller.minimumPickingTerrainDistanceWithInertia;
 
   const needPickGlobe = inertiaMovement
-    ? inertiaMovementApproachingGround
+    ? approachingCollision
     : height < controller._minimumPickingTerrainHeight;
   if (needPickGlobe) {
     intersection = pickGlobe(controller, windowPosition, zoomCVIntersection);
@@ -2206,6 +2216,7 @@ function zoom3D(controller, startPosition, movement) {
   let distance;
   if (defined(intersection)) {
     distance = Cartesian3.distance(ray.origin, intersection);
+    preIntersectionDistance = distance;
   }
 
   if (cameraUnderground) {

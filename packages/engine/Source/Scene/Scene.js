@@ -2630,6 +2630,12 @@ function executeCommands(scene, passState) {
       clearStencil.execute(context, passState);
     }
 
+    us.updatePass(Pass.VOXELS);
+    commands = frustumCommands.commands[Pass.VOXELS];
+    length = frustumCommands.indices[Pass.VOXELS];
+    commands.length = length;
+    executeVoxelCommands(scene, executeCommand, passState, commands);
+
     us.updatePass(Pass.OPAQUE);
     commands = frustumCommands.commands[Pass.OPAQUE];
     length = frustumCommands.indices[Pass.OPAQUE];
@@ -2699,12 +2705,6 @@ function executeCommands(scene, passState) {
       pickDepth.update(context, depthStencilTexture);
       pickDepth.executeCopyDepth(context, passState);
     }
-
-    us.updatePass(Pass.VOXELS);
-    commands = frustumCommands.commands[Pass.VOXELS];
-    length = frustumCommands.indices[Pass.VOXELS];
-    commands.length = length;
-    executeVoxelCommands(scene, executeCommand, passState, commands);
 
     if (picking || !usePostProcessSelected) {
       continue;
