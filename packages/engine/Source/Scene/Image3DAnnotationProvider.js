@@ -53,6 +53,8 @@ function Image3DAnnotationProvider(options) {
 
   this._scale = defaultValue(options.scale, 1);
 
+  this._clampLevel = defaultValue(options.clampLevel, 50);
+
   if (this._priority < -1) {
     throw new DeveloperError("priority must above zero");
   }
@@ -244,8 +246,6 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
     const width = x2 - x1;
     const height = y2 - y1;
 
-    const heightReference = HeightReference.CLAMP_TO_GROUND;
-
     let id = data.content[i]["id"];
     if (!defined(id)) {
       id = this._index;
@@ -262,6 +262,9 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
       pixelOffset.x = -originOffset.x * this.scale;
       pixelOffset.y = originOffset.y * this.scale;
     }
+
+    const needClamp = tile._level > this._clampLevel;
+    const heightReference = HeightReference.CLAMP_TO_GROUND;
 
     const billboard = tile.collection.add({
       id: id,
@@ -284,6 +287,7 @@ Image3DAnnotationProvider.prototype.parseTileData = function (tile) {
         ? VerticalOrigin.BOTTOM
         : VerticalOrigin.CENTER,
       pixelOffset: pixelOffset,
+      needClamp: needClamp,
       heightReference: heightReference,
       show: this._show,
       animation: GWBillboardAnimationType.HIDE,

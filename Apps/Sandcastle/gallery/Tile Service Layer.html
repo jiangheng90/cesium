@@ -33,9 +33,9 @@
         "use strict";
         //Sandcastle_Begin
         const viewer = new Cesium.Viewer("cesiumContainer", {
-          imageryProvider: new Cesium.TileMapServiceImageryProvider({
-            url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
-          }),
+          // imageryProvider: new Cesium.TileMapServiceImageryProvider({
+          //   url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"),
+          // }),
           // imageryProvider: new Cesium.ArcGisMapServerImageryProvider({
           //   url:
           //     "https://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/",
@@ -72,6 +72,20 @@
           }),
         });
         viewer.extend(Cesium.viewerCesiumInspectorMixin);
+        const tileset = viewer.scene.primitives.add(
+          Cesium.createOsmBuildings()
+        );
+        // const tileset = viewer.scene.primitives.add(
+        //   new Cesium.Cesium3DTileset({
+        //     url:
+        //       "http://intenal.geoway-atlas.com:31280/ime-cloud/rest/zhucheng_all_KTX_DSMV5/3dtiles/tileset.json",
+        //     useVisibleByDistanceToCamera: true,
+        //     isGeoway3DTileset: true,
+        //     needUpdate: false,
+        //     // skipLevelOfDetail: true,
+        //   })
+        // );
+        // viewer.zoomTo(tileset);
 
         if (Cesium.FeatureDetection.supportsImageRenderingPixelated()) {
           viewer.resolutionScale = window.devicePixelRatio;
@@ -90,7 +104,8 @@
           tileWidth: 512,
           tileHeight: 512,
           ratio: 2,
-          // scale: 2,
+          scale: 0.7,
+          clampLevel: 13,
           priority: 2,
           tileMatrixLabels: [
             "2",
@@ -194,10 +209,11 @@
         }
 
         addAnotherLayer();
-        viewer.camera.flyTo({
-          destination: Cesium.Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2),
-          duration: 0,
-        });
+        // addLayer();
+        // viewer.camera.flyTo({
+        //   destination: Cesium.Rectangle.fromDegrees(89.5, 20.4, 110.4, 61.2),
+        //   duration: 0,
+        // });
 
         const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction(function (movement) {

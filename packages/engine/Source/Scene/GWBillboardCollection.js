@@ -1876,6 +1876,14 @@ GWBillboardCollection.prototype.update = function (frameState) {
         break;
       }
     }
+    if (billboard._needClamp && this._scene) {
+      if (billboard._clampedFrameNumber === 0) {
+        this._scene._billboardsToClampHeight.push(billboard);
+        billboard._needClamp = false;
+      } else {
+        billboard._clampedFrameNumber--;
+      }
+    }
   }
   // GW-ADD
 

@@ -82,6 +82,7 @@ import Cartesian2 from "../Core/Cartesian2.js";
 import GWBillboard from "./GWBillboard.js";
 import GWBillboardAnimationType from "./GWBillboardAnimationType.js";
 import TileServiceLayerCollection from "./TileServiceLayerCollection.js";
+import HeightReference from "./HeightReference.js";
 // GW-ADD
 
 const requestRenderAfterFrame = function (scene) {
@@ -719,6 +720,7 @@ function Scene(options) {
     options.enableCollisionDetection,
     true
   );
+  this._billboardsToClampHeight = [];
   // GW-ADD
 
   // Give frameState, camera, and screen space camera controller initial state before rendering
@@ -3713,7 +3715,7 @@ function renderTileServiceLayer(scene) {
     const tileDatasCollectionLength = tileDatasCollection.length;
     for (let j = 0; j < tileDatasCollectionLength; ++j) {
       const tiledata = tileDatasCollection[j];
-      if (defined(tiledata.collection)) {
+      if (defined(tiledata.collection) && !tiledata.collection.isDestroyed()) {
         tiledata.collection.update(frameState);
       }
     }
@@ -3741,12 +3743,6 @@ function updateAndRenderPrimitives(scene) {
     tileServiceLayers.length > 0
   ) {
     renderTileServiceLayer(scene);
-    // updateHeights(scene);
-    if (scene._enableCollisionDetection) {
-      calculateCollision(scene);
-    } else {
-      calculateCluster(scene);
-    }
   }
   // GW-ADD
 }
@@ -4242,6 +4238,43 @@ Scene.prototype.render = function (time) {
 
   tryAndCatchError(this, prePassesUpdate);
 
+  // GW-ADD
+  let index = 0;
+  while (index <= this._billboardsToClampHeight.length - 1) {
+    const billboard = this._billboardsToClampHeight[index];
+    if (
+      !billboard._billboardCollection ||
+      billboard._billboardCollection.isDestroyed()
+    ) {
+      this._billboardsToClampHeight.splice(index, 1);
+      billboard._needClamp = true;
+    } else {
+      index++;
+    }
+  }
+
+  const billboard = this._billboardsToClampHeight.shift();
+  if (
+    billboard &&
+    billboard._billboardCollection &&
+    !billboard._billboardCollection.isDestroyed()
+  ) {
+    const result = this.clampToHeight(billboard.position, [
+      billboard._billboardCollection,
+    ]);
+    if (result) {
+      billboard.position = result;
+    }
+
+    billboard.heightReference = result
+      ? HeightReference.NONE
+      : HeightReference.CLAMP_TO_GROUND;
+
+    billboard._needClamp = true;
+    billboard._clampedFrameNumber = 1200;
+  }
+  // GW-ADD
+
   /**
    *
    * Passes update. Add any passes here
@@ -4280,6 +4313,15 @@ Scene.prototype.render = function (time) {
     this._postRender.raiseEvent(this, time);
     frameState.creditDisplay.endFrame();
   }
+
+  // GW-ADD
+  const scene = this;
+  if (scene._enableCollisionDetection) {
+    calculateCollision(scene);
+  } else {
+    calculateCluster(scene);
+  }
+  // GW-ADD
 };
 
 /**

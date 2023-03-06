@@ -193,6 +193,9 @@ function GWBillboard(options, billboardCollection) {
   this._hiddenFrame = defaultValue(options.hiddenFrame, 1);
   this._guid = createGuid();
 
+  this._clampedFrameNumber = 0;
+  this._needClamp = defaultValue(options.needClamp, false);
+
   const image = options.image;
   let imageId = options.imageId;
   if (defined(image)) {
