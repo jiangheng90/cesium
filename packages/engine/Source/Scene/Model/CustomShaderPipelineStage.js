@@ -165,6 +165,12 @@ CustomShaderPipelineStage.process = function (
       return model._boundingCenter;
     };
 
+    shaderBuilder.addDefine(
+      "HAS_CUSTOM_MASK",
+      undefined,
+      ShaderDestination.BOTH
+    );
+
     renderResources.uniformMap = combine(
       renderResources.uniformMap,
       additionUniforms
