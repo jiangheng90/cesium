@@ -154,7 +154,9 @@ CustomShaderPipelineStage.process = function (
     const additionUniforms = {};
     shaderBuilder.addUniform("sampler2D", "model_mask");
     additionUniforms.model_mask = function () {
-      return model._mask.texture;
+      return model._mask
+        ? model._mask.texture
+        : frameState.context.defaultEmptyTexture;
     };
     shaderBuilder.addUniform("vec3", "model_halfAxes");
     additionUniforms.model_halfAxes = function () {
@@ -164,12 +166,6 @@ CustomShaderPipelineStage.process = function (
     additionUniforms.model_center = function () {
       return model._boundingCenter;
     };
-
-    shaderBuilder.addDefine(
-      "HAS_CUSTOM_MASK",
-      undefined,
-      ShaderDestination.BOTH
-    );
 
     renderResources.uniformMap = combine(
       renderResources.uniformMap,
