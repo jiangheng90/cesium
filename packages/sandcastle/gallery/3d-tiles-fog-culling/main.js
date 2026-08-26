@@ -28,15 +28,38 @@ try {
           ${error}`);
 }
 
-// Toggle fog-based far-distance culling on the tileset at runtime, to
-// compare against the default (frustum-only) culling. The camera is placed
-// on the Indian plains south of the Himalayas, looking north at the range:
-// at low altitude the fog density table culls tiles beyond a few hundred
-// kilometers, which removes distant high terrain that is still visible.
+// Switch the tileset's far-distance culling strategy at runtime. The camera
+// is placed on the Indian plains south of the Himalayas, looking north at
+// the range: at low altitude the fog density table culls tiles beyond a few
+// hundred kilometers, which removes distant high terrain that is still
+// visible; the horizon far bound at the default 15000 m datum inset keeps it.
 if (Cesium.defined(tileset)) {
-  Sandcastle.addToggleButton("Fog culling", false, function (checked) {
-    tileset.fogCulling = checked;
-  });
+  Sandcastle.addToolbarMenu([
+    {
+      text: "Far culling: Off",
+      value: "off",
+      onselect: function () {
+        tileset.fogCulling = false;
+        tileset.horizonCulling = false;
+      },
+    },
+    {
+      text: "Far culling: Fog",
+      value: "fog",
+      onselect: function () {
+        tileset.fogCulling = true;
+        tileset.horizonCulling = false;
+      },
+    },
+    {
+      text: "Far culling: Horizon",
+      value: "horizon",
+      onselect: function () {
+        tileset.fogCulling = false;
+        tileset.horizonCulling = true;
+      },
+    },
+  ]);
 }
 
 // Point the camera from the Indian plains toward the Himalayas

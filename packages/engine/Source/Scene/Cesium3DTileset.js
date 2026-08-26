@@ -86,6 +86,8 @@ import ImageryLayerCollection from "./ImageryLayerCollection.js";
  * @property {boolean} [preferLeaves=false] Optimization option. Prefer loading of leaves first.
  * @property {boolean} [dynamicScreenSpaceError=true] Optimization option. For street-level horizon views, use lower resolution tiles far from the camera. This reduces the amount of data loaded and improves tileset loading time with a slight drop in visual quality in the distance.
  * @property {boolean} [fogCulling=false] Whether to cull tiles beyond the fog distance for the camera-height-dependent fog density. This is a heuristic far bound, not a geometric horizon culling. Can be toggled at runtime via {@link Cesium3DTileset#fogCulling}.
+ * @property {boolean} [horizonCulling=false] Whether to cull tiles beyond the horizon (tangent) distance to a datum surface sunk {@link Cesium3DTileset#horizonCullingInset} meters below the ellipsoid. Per-tile test against the bounding sphere; does not modify the render frustum. Can be toggled at runtime via {@link Cesium3DTileset#horizonCulling}.
+ * @property {number} [horizonCullingInset=15000.0] Datum depth below the ellipsoid surface used by {@link Cesium3DTileset#horizonCulling}, in meters. Doubles as the relief allowance: terrain up to this height keeps a meaningful bound near the ground.
  * @property {number} [dynamicScreenSpaceErrorDensity=2.0e-4] Similar to {@link Fog#density}, this option controls the camera distance at which the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization applies. Larger values will cause tiles closer to the camera to be affected.
  * @property {number} [dynamicScreenSpaceErrorFactor=24.0] A parameter that controls the intensity of the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization for tiles on the horizon. Larger values cause lower resolution tiles to load, improving runtime performance at a slight reduction of visual quality.
  * @property {number} [dynamicScreenSpaceErrorHeightFalloff=0.25] A ratio of the tileset's height that determines where "street level" camera views occur. When the camera is below this height, the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization will have the maximum effect, and it will roll off above this value.
@@ -778,6 +780,39 @@ function Cesium3DTileset(options) {
   // of the frame (see Cesium3DTile#updateVisibility).
   this._fogDensity = 0.0;
   this._fogDensityFrame = -1;
+
+  /**
+   * Whether to cull tiles beyond the horizon (tangent) distance: a far
+   * bound perpendicular to the view direction at the tangent distance to a
+   * datum surface sunk {@link Cesium3DTileset#horizonCullingInset} meters
+   * below the ellipsoid. The test is per tile against its bounding sphere
+   * and does not modify the render frustum or any shared culling volume.
+   * Can be toggled at runtime.
+   *
+   * @type {boolean}
+   * @default false
+   */
+  this.horizonCulling = options.horizonCulling ?? false;
+
+  /**
+   * Datum depth below the ellipsoid surface used by
+   * {@link Cesium3DTileset#horizonCulling}, in meters. Doubles as the relief
+   * allowance: terrain up to this height keeps a meaningful bound near the
+   * ground. The default 15000 m comfortably covers all Earth relief.
+   *
+   * @type {number}
+   * @default 15000.0
+   */
+  this.horizonCullingInset = options.horizonCullingInset ?? 15000.0;
+
+  // Per-frame horizon culling state (see Cesium3DTile#updateVisibility):
+  // the datum ellipsoid (rebuilt when the inset changes) and the one-plane
+  // culling volume holding the horizon far plane (rebuilt once per frame;
+  // undefined when the camera is below the datum and no far bound applies).
+  this._horizonCullingDatum = undefined;
+  this._horizonCullingDatumInset = undefined;
+  this._horizonCullingVolume = undefined;
+  this._horizonCullingFrame = -1;
 
   /**
    * Optional runtime content codec injected by data providers
