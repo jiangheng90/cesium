@@ -34,7 +34,6 @@ import findGroupMetadata from "./findGroupMetadata.js";
 import findTileMetadata from "./findTileMetadata.js";
 import FogCulling from "./FogCulling.js";
 import hasExtension from "./hasExtension.js";
-import HorizonCulling from "./HorizonCulling.js";
 import Multiple3DTileContent from "./Multiple3DTileContent.js";
 import BoundingVolumeSemantics from "./BoundingVolumeSemantics.js";
 import preprocess3DTileContent from "./preprocess3DTileContent.js";
@@ -1015,45 +1014,6 @@ function getPriorityReverseScreenSpaceError(tileset, tile) {
 }
 
 /**
- * Rebuild the tileset's horizon culling state for this frame: the datum
- * ellipsoid (only when the inset changed) and a dedicated one-plane culling
- * volume holding the horizon far plane. Returns <code>undefined</code> when
- * the camera is at or below the datum and no far bound applies this frame.
- *
- * @private
- * @param {Cesium3DTileset} tileset
- * @param {FrameState} frameState
- * @returns {CullingVolume|undefined}
- */
-function updateHorizonCullingVolume(tileset, frameState) {
-  const inset = tileset.horizonCullingInset;
-  if (tileset._horizonCullingDatumInset !== inset) {
-    tileset._horizonCullingDatumInset = inset;
-    tileset._horizonCullingDatum = HorizonCulling.datumEllipsoid(
-      frameState.mapProjection.ellipsoid,
-      inset,
-    );
-  }
-  const camera = frameState.camera;
-  const maxCullingDistance = HorizonCulling.computeMaxCullingDistance(
-    camera.position,
-    tileset._horizonCullingDatum,
-  );
-  if (maxCullingDistance < 0.0) {
-    return undefined;
-  }
-  if (!defined(tileset._horizonCullingVolume)) {
-    tileset._horizonCullingVolume = new CullingVolume();
-  }
-  return HorizonCulling.computeCullingVolume(
-    camera.position,
-    camera.direction,
-    maxCullingDistance,
-    tileset._horizonCullingVolume,
-  );
-}
-
-/**
  * Update the tile's visibility.
  *
  * @private
@@ -1100,25 +1060,6 @@ Cesium3DTile.prototype.updateVisibility = function (frameState) {
       this._distanceToCamera,
       tileset._fogDensity,
     );
-  }
-
-  if (this._visible && tileset.horizonCulling) {
-    // The far plane is rebuilt once per frame (per tileset) into a dedicated
-    // one-plane culling volume — the render frustum is never touched. The
-    // datum ellipsoid is rebuilt only when the inset changes.
-    if (tileset._horizonCullingFrame !== frameState.frameNumber) {
-      tileset._horizonCullingFrame = frameState.frameNumber;
-      tileset._horizonCullingVolume = updateHorizonCullingVolume(
-        tileset,
-        frameState,
-      );
-    }
-    const cullingVolume = tileset._horizonCullingVolume;
-    if (defined(cullingVolume)) {
-      this._visible =
-        cullingVolume.computeVisibility(this.boundingSphere) !==
-        CullingVolume.MASK_OUTSIDE;
-    }
   }
 
   this._inRequestVolume = this.insideViewerRequestVolume(frameState);
