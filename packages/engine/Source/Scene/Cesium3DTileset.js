@@ -85,6 +85,7 @@ import ImageryLayerCollection from "./ImageryLayerCollection.js";
  * @property {boolean} [preloadFlightDestinations=true] Optimization option. Preload tiles at the camera's flight destination while the camera is in flight.
  * @property {boolean} [preferLeaves=false] Optimization option. Prefer loading of leaves first.
  * @property {boolean} [dynamicScreenSpaceError=true] Optimization option. For street-level horizon views, use lower resolution tiles far from the camera. This reduces the amount of data loaded and improves tileset loading time with a slight drop in visual quality in the distance.
+ * @property {boolean} [fogCulling=false] Whether to cull tiles beyond the fog distance for the camera-height-dependent fog density. This is a heuristic far bound, not a geometric horizon culling. Can be toggled at runtime via {@link Cesium3DTileset#fogCulling}.
  * @property {number} [dynamicScreenSpaceErrorDensity=2.0e-4] Similar to {@link Fog#density}, this option controls the camera distance at which the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization applies. Larger values will cause tiles closer to the camera to be affected.
  * @property {number} [dynamicScreenSpaceErrorFactor=24.0] A parameter that controls the intensity of the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization for tiles on the horizon. Larger values cause lower resolution tiles to load, improving runtime performance at a slight reduction of visual quality.
  * @property {number} [dynamicScreenSpaceErrorHeightFalloff=0.25] A ratio of the tileset's height that determines where "street level" camera views occur. When the camera is below this height, the {@link Cesium3DTileset#dynamicScreenSpaceError} optimization will have the maximum effect, and it will roll off above this value.
@@ -760,6 +761,23 @@ function Cesium3DTileset(options) {
   this.skipLevelOfDetail = options.skipLevelOfDetail ?? false;
 
   this._disableSkipLevelOfDetail = false;
+
+  /**
+   * Whether to cull tiles beyond the fog distance, i.e. the point where the
+   * exponential fog factor underflows for the camera-height-dependent fog
+   * density (see {@link FogCulling}). This is a heuristic far bound, not a
+   * geometric horizon culling; the density table models Earth's atmosphere.
+   * Can be toggled at runtime.
+   *
+   * @type {boolean}
+   * @default false
+   */
+  this.fogCulling = options.fogCulling ?? false;
+
+  // Fog density of the current frame, computed lazily on the first fog test
+  // of the frame (see Cesium3DTile#updateVisibility).
+  this._fogDensity = 0.0;
+  this._fogDensityFrame = -1;
 
   /**
    * Optional runtime content codec injected by data providers

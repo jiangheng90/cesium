@@ -1,0 +1,6 @@
+legacyId: 3D Tiles Fog Culling.html
+title: 3D Tiles Fog Culling
+description: Compare fog-based far-distance culling against the default frustum-only culling on Google Photorealistic 3D Tiles, from the Indian plains looking at the Himalayas.
+labels:
+  - 3D Tiles
+thumbnail: ../google-photorealistic-3d-tiles/thumbnail.jpg

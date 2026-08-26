@@ -32,6 +32,7 @@ import Empty3DTileContent from "./Empty3DTileContent.js";
 import findContentMetadata from "./findContentMetadata.js";
 import findGroupMetadata from "./findGroupMetadata.js";
 import findTileMetadata from "./findTileMetadata.js";
+import FogCulling from "./FogCulling.js";
 import hasExtension from "./hasExtension.js";
 import Multiple3DTileContent from "./Multiple3DTileContent.js";
 import BoundingVolumeSemantics from "./BoundingVolumeSemantics.js";
@@ -1045,6 +1046,22 @@ Cesium3DTile.prototype.updateVisibility = function (frameState) {
     parentVisibilityPlaneMask,
   ); // Use parent's plane mask to speed up visibility test
   this._visible = this._visibilityPlaneMask !== CullingVolume.MASK_OUTSIDE;
+
+  if (this._visible && tileset.fogCulling) {
+    // Fog density is a pure function of the camera height, so compute it
+    // once per frame (per tileset) and reuse it for every tile.
+    if (tileset._fogDensityFrame !== frameState.frameNumber) {
+      tileset._fogDensityFrame = frameState.frameNumber;
+      tileset._fogDensity = FogCulling.densityAtHeight(
+        frameState.camera.positionCartographic.height,
+      );
+    }
+    this._visible = FogCulling.isVisible(
+      this._distanceToCamera,
+      tileset._fogDensity,
+    );
+  }
+
   this._inRequestVolume = this.insideViewerRequestVolume(frameState);
   this._priorityReverseScreenSpaceError = getPriorityReverseScreenSpaceError(
     tileset,
